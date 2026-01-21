@@ -74,20 +74,20 @@ export const mockSchedules = [
 export const mockBusLocations = [
   {
     busNumber: "AB-1234",
-    latitude: 6.9271,
-    longitude: 79.8612,
+    lat: 6.9271,
+    lng: 79.8612,
     routeId: 1,
   },
   {
     busNumber: "AB-5678",
-    latitude: 6.9275,
-    longitude: 79.8670,
+    lat: 6.9275,
+    lng: 79.8670,
     routeId: 1,
   },
   {
     busNumber: "CD-9876",
-    latitude: 6.9150,
-    longitude: 79.8640,
+    lat: 6.9150,
+    lng: 79.8640,
     routeId: 2,
   },
 ];

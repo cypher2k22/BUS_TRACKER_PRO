@@ -1,32 +1,49 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Pressable, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Animated,
+  ImageBackground,
+} from "react-native";
 
 export default function Home({ navigation }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 700,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 800,
+        duration: 700,
         useNativeDriver: true,
       }),
     ]).start();
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ImageBackground
+      source={require("../assets/home.jpg")}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      {/* Dark overlay */}
+      <View style={styles.overlay} />
+
       <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }}
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
       >
         <Text style={styles.title}>BUS TRACKER PRO</Text>
         <Text style={styles.subtitle}>
@@ -37,60 +54,67 @@ export default function Home({ navigation }: any) {
           style={styles.primaryBtn}
           onPress={() => navigation.navigate("Login")}
         >
-          <Text style={styles.btnText}>LOGIN</Text>
+          <Text style={styles.btnText}>Login</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.secondaryBtn}
-          onPress={() => navigation.navigate("Signup")}
-        >
-          <Text style={styles.secondaryText}>CREATE ACCOUNT</Text>
+        <Text style={styles.helperText}>
+          Don’t have an account?
+        </Text>
+
+        <Pressable onPress={() => navigation.navigate("RoleSelector")}>
+          <Text style={styles.linkText}>Create an account</Text>
         </Pressable>
       </Animated.View>
-    </View>
+    </ImageBackground>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3E8FF",
     justifyContent: "center",
-    paddingHorizontal: 25,
+    paddingHorizontal: 24,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  content: {
+    zIndex: 1,
   },
   title: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: "900",
-    color: "#4B0082",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: "#555",
-    marginBottom: 40,
+    color: "#EDEDED",
+    textAlign: "center",
+    marginBottom: 36,
   },
   primaryBtn: {
     backgroundColor: "#6A0DAD",
-    paddingVertical: 15,
-    borderRadius: 30,
+    paddingVertical: 14,
+    borderRadius: 28,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   btnText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "700",
   },
-  secondaryBtn: {
-    borderWidth: 2,
-    borderColor: "#6A0DAD",
-    paddingVertical: 15,
-    borderRadius: 30,
-    alignItems: "center",
+  helperText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 6,
   },
-  secondaryText: {
-    color: "#6A0DAD",
-    fontWeight: "bold",
+  linkText: {
+    color: "#4DA3FF",
     fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

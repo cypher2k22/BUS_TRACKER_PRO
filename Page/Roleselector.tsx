@@ -31,6 +31,9 @@ export default function RoleSelector({ navigation }: any) {
         >
           <Text style={styles.roleText}>Admin</Text>
         </Pressable>
+        <Pressable  style={styles.roleButton} onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.roleText}>Back</Text>
+        </Pressable>
       </View>
     </ImageBackground>
   );

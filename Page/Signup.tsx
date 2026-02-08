@@ -46,8 +46,8 @@ export default function Signup({ route, navigation }: any) {
         <Pressable style={styles.button} onPress={handleSignup}>
           <Text style={styles.buttonText}>Signup</Text>
         </Pressable>
-        <Pressable onPress={() => navigation.navigate("Home")}>
-          <Text style={{ color: "white", marginTop: 15 }}>Back to Home</Text>
+        <Pressable onPress={() => navigation.navigate("RoleSelector")}>
+          <Text style={{ color: "white", marginTop: 15 }}>Back</Text>
         </Pressable>  
         <Pressable onPress={() => navigation.navigate("Login")}>
           <Text style={{ color: "white", marginTop: 15 }}>Already have an account? Login</Text>

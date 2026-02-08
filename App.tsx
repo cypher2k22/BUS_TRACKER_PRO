@@ -21,6 +21,9 @@ export default function App() {
         <Stack.Screen name="RoleSelector" component={RoleSelector} />
         <Stack.Screen name="PassengerHome" component={PassengerHome} />
         <Stack.Screen name="LiveTracking" component={LiveTracking} />
+        <Stack.Screen name="RouteInfo" component={require("./Page/Passanger/RouteInfo").default} />
+        <Stack.Screen name="Schedule" component={require("./Page/Passanger/Schedule").default} />
+        <Stack.Screen name="SearchRoute" component={require("./Page/Passanger/SearchRoute").default} />
       </Stack.Navigator>
     </NavigationContainer>
   );

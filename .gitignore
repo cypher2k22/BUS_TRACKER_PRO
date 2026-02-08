@@ -1,1 +1,5 @@
 .DS_Store
+node_modules
+.env
+serviceAccountKey.json
+busguiderapp-2ed8d-firebase-adminsdk-fbsvc-c05b213692.json

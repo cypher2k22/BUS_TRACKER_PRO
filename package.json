@@ -1,13 +1,13 @@
 {
-  "name": "todolistapp",
-  "license": "0BSD",
-  "version": "53.0.27",
+  "name": "bus-tracker-pro",
+  "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "start-dev": "nodemon index.js --legacy-watch"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -24,12 +24,17 @@
     "react-native-maps": "1.20.1",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-web": "^0.20.0"
+    "react-native-web": "^0.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.22.1",
+    "firebase-admin": "^13.6.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
     "@types/react-native": "^0.72.8",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "nodemon": "^3.1.11"
   }
 }

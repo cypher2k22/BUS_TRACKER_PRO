@@ -4,17 +4,17 @@
 export const mockUsers = [
   {
     id: 1,
-    fullName: "John Doe",
+    fullusername: "John Doe",
     email: "john@example.com",
-    username: "john123",
+    usename: "john123",
     password: "123456",
     role: "passenger", // could be passenger/admin/driver
   },
   {
     id: 2,
-    fullName: "Jane Smith",
+    fullusername: "Jane Smith",
     email: "jane@example.com",
-    username: "jane456",
+    usename: "jane456",
     password: "abcdef",
     role: "passenger",
   },

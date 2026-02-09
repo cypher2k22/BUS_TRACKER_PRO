@@ -1,17 +1,19 @@
-
 const admin = require("../config/firebase");
 
 const signup =async(req,res)=>{
     try{
-        const{username,email,password,role} = req.body;
+        const{username,email,password,role,busNumber,
+      busRoute} = req.body;
         if (!email || !password || !role) {
       return res.status(400).json({ message: "Email, password, and role required" });
     }
-     //  Check Firestore for existing user with the same email
-    const existinguser=await admin.firestore().collection("users").where("email","==",email).get();
-    if(!existinguser.empty){
-        return res.status(400).json({message:"User with this email already exists"});
+     
+    if (role === "driver") {
+      if (!busNumber || !busRoute) {
+        return res.status(400).json({ message: "Bus number and route required for drivers" });
+      }
     }
+
      const allowedRoles = ["passenger", "driver", "admin"];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
@@ -30,6 +32,10 @@ const signup =async(req,res)=>{
          role: role,
          
         email:email,
+         ...(role === "driver" && {
+        busNumber,
+        busRoute
+      }),
         createdAt:new Date()
     });
     res.status(201).json({message:"User created successfully",uid:userrecord.uid});

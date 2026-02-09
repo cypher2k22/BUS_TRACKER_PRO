@@ -3,3 +3,6 @@ node_modules
 .env
 serviceAccountKey.json
 busguiderapp-2ed8d-firebase-adminsdk-fbsvc-c05b213692.json
+node_modules/
+.expo/
+.DS_Store

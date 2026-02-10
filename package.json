@@ -1,43 +1,39 @@
 {
-  "name": "bus-tracker-pro",
+  "name": "bus_tracker_pro",
   "version": "1.0.0",
-  "main": "index.ts",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "start-dev": "nodemon index.js --legacy-watch"
+    "eject": "expo eject"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~5.0.4",
-    "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "2.1.2",
-    "@react-navigation/native": "^7.1.26",
-    "@react-navigation/native-stack": "^7.9.0",
-    "axios": "^1.13.4",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "expo": "~53.0.9",
-    "expo-linear-gradient": "~14.1.5",
-    "expo-status-bar": "~2.2.3",
-    "express": "^4.22.1",
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-navigation/native": "^7.1.28",
+    "@react-navigation/native-stack": "^7.12.0",
+    "axios": "^1.13.5",
+    "expo": "^54.0.33",
+    "expo-linear-gradient": "~15.0.8",
+    "expo-status-bar": "~1.6.0",
     "firebase": "^12.9.0",
-    "firebase-admin": "^13.6.1",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-native": "0.79.2",
-    "react-native-maps": "1.20.1",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1",
-    "react-native-web": "^0.20.0"
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@expo/ngrok": "^4.1.3",
-    "@types/react": "~19.0.10",
-    "@types/react-native": "^0.72.8",
-    "nodemon": "^3.1.11",
-    "typescript": "~5.8.3"
+    "@babel/core": "^7.20.0",
+    "@types/react": "~19.1.10",
+    "babel-preset-expo": "^54.0.10",
+    "typescript": "~5.9.2"
+  },
+  "resolutions": {
+    "string-width-cjs": "4.2.2"
   }
 }

@@ -7,7 +7,15 @@ import Login from "./Page/Login";
 import Signup from "./Page/Signup";
 import RoleSelector from "./Page/Roleselector";
 import PassengerHome from "./Page/Passanger/Home";
-import LiveTracking from "./Page/Passanger/LiveTracking";
+import Feedback from "./Page/Passanger/Feedback";
+import Schedule from "./Page/Passanger/Schedule";
+import SearchRoute from "./Page/Passanger/SearchRoute";
+import adminHome from "./Page/admin/Home";
+import DriverHome from "./Page/driver/Home";
+import MyRoute from "./Page/driver/MyRoute";
+import PassengerInfo from "./Page/driver/PassengerInfo";
+import TodaySchedule from "./Page/driver/TodaySchedule";
+
 
 const Stack = createNativeStackNavigator();
 
@@ -20,10 +28,15 @@ export default function App() {
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="RoleSelector" component={RoleSelector} />
         <Stack.Screen name="PassengerHome" component={PassengerHome} />
-        <Stack.Screen name="LiveTracking" component={LiveTracking} />
-        <Stack.Screen name="RouteInfo" component={require("./Page/Passanger/RouteInfo").default} />
-        <Stack.Screen name="Schedule" component={require("./Page/Passanger/Schedule").default} />
-        <Stack.Screen name="SearchRoute" component={require("./Page/Passanger/SearchRoute").default} />
+        <Stack.Screen name="Feedback" component={Feedback} />
+        <Stack.Screen name="Schedule" component={Schedule} />
+        <Stack.Screen name="SearchRoute" component={SearchRoute} />
+        <Stack.Screen name="adminhome" component={adminHome} />
+        <Stack.Screen name="DriverHome" component={DriverHome} />
+        <Stack.Screen name="MyRoute" component={MyRoute} />
+        <Stack.Screen name="PassengerInfo" component={PassengerInfo} />
+        <Stack.Screen name="TodaySchedule" component={TodaySchedule} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

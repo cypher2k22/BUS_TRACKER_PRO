@@ -6,9 +6,9 @@ const { searchbuses } = require("../controllers/passengerController");
 const router = express.Router();
 
 // protect all passenger routes
-router.use(authenticateUser);
+//router.use(authenticateUser);
 
-router.use(authorizeRole(["passenger"]));
+//router.use(authorizeRole(["passenger"]));
 
 // search buses
 router.get("/search-buses", searchbuses);

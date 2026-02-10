@@ -13,35 +13,54 @@ export default function Home({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Welcome to App Tracker Pro</Text>
         <Text style={styles.subheader}>
-          Please select your route to search for your bus
+          
         </Text>
 
         <Pressable
           style={styles.button}
           onPress={() => navigation.navigate("SearchRoute")}
         >
-          <Text style={styles.buttonText}>Search Route</Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("Schedule")}
-        >
-          <Text style={styles.buttonText}>Schedule</Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("Feedback")}
-        >
-          <Text style={styles.buttonText}>Feedback</Text>
+          <Text style={styles.buttonText}>create route</Text>
         </Pressable>
 
         <Pressable
           style={styles.button}
+          onPress={() => navigation.navigate("LiveTracking")}
+        >
+          <Text style={styles.buttonText}>Delete Route</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.button}
+          onPress={() => navigation.navigate("Schedule")}
+        >
+          <Text style={styles.buttonText}>Edit Route</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.button}
+          onPress={() => navigation.navigate("RouteInfo")}
+        >
+          <Text style={styles.buttonText}>Add bus</Text>
+        </Pressable>
+        <Pressable
+          style={styles.button}
           onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.buttonText}>delete bus</Text>
+        </Pressable>
+        <Pressable
+          style={styles.button}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.buttonText}>edit bus</Text>
+        </Pressable>
+        <Pressable
+          style={styles.button}
+          onPress={() => navigation.navigate("Login")}
         >
           <Text style={styles.buttonText}>Back</Text>
         </Pressable>
-        
       </ScrollView>
     </View>
   );

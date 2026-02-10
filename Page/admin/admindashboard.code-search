@@ -1,0 +1,10 @@
+# Query: admindashboard
+# Flags: WordMatch
+# ContextLines: 1
+
+1 result - 1 file
+
+Page/Login.tsx:
+  52      } else if (user.role === "admin") {
+  53:       navigation.navigate("adminhome");
+  54      } else {

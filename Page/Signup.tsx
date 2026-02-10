@@ -26,52 +26,47 @@ export default function Signup({ route, navigation }: any) {
 
   // Handle signup button click
   const handleSignup = async () => {
-
-    // Basic validation
     if (!username || !email || !password || (role === "driver" && (!busNumber || !busRoute))) {
       Alert.alert("Error", "Please fill all required fields!");
       return;
     }
 
-    // Request payload
-    const payload = {
-      username,
-      email,
-      password,
-      role,
-      busNumber,
-      busRoute,
-    };
+    const payload = { username, email, password, role, busNumber, busRoute };
 
     try {
       setLoading(true);
-
-      // Backend full URL (LAN-accessible)
       const SIGNUP_URL = "http://bakeerathans-macbook-air.local:3000/api/auth/signup";
-
-      console.log("➡ Sending signup request to:", SIGNUP_URL);
-
+      
       const response = await axios.post(SIGNUP_URL, payload);
 
-      console.log("✅ Signup successful:", response.data);
+      // --- NEW NAVIGATION LOGIC ---
+      Alert.alert("Success", "Account created successfully!");
 
-      Alert.alert("Success", "Signup successful! Please login.");
-      navigation.navigate("Login");
+      // Navigate based on the 'role' variable already in your state
+      if (role === "passenger") {
+        navigation.replace("PassengerHome"); 
+      } else if (role === "driver") {
+        navigation.replace("DriverHome");
+      } else if (role === "admin") {
+        navigation.replace("adminhome");
+      } else {
+        // Fallback if role is undefined
+        navigation.replace("Login");
+      }
+      // -----------------------------
 
     } catch (error: any) {
-
       console.error("❌ Signup error:", error);
-
       if (error.response) {
         Alert.alert("Signup Failed", error.response.data.message || "Invalid data");
       } else {
         Alert.alert("Network Error", "Cannot connect to backend server.");
       }
-
     } finally {
       setLoading(false);
     }
   };
+
 
   // Select background image based on role
   const backgroundImage = () => {
@@ -141,6 +136,7 @@ export default function Signup({ route, navigation }: any) {
         <Pressable onPress={() => navigation.navigate("Login")}>
           <Text style={styles.linkText}>Already have an account? Login</Text>
         </Pressable>
+
 
       </ScrollView>
     </ImageBackground>

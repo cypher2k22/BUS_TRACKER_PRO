@@ -17,6 +17,11 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/passenger", passengerRoutes);
+app.use((req, res, next) => {
+  console.log(`📩 INCOMING: ${req.method} ${req.url}`);
+  next();
+});
+
 
 // Test endpoint to verify server connectivity
 app.get("/api/test", (req, res) => {

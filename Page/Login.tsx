@@ -1,3 +1,4 @@
+import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
 import {
   View,
@@ -11,6 +12,8 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
+ 
+import { auth } from "../firebaseConfig";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -19,36 +22,63 @@ export default function Login({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
-      return;
-    }
+  if (!email || !password) {
+    Alert.alert("Error", "Please enter email and password");
+    return;
+  }
 
-    setLoading(true);
-    const payload = { email, password };
-    const LOGIN_URL = "http://bakeerathans-macbook-air.local:3000/api/auth/getProfile";
+  setLoading(true);
 
-    try {
-      const response = await axios.post(LOGIN_URL, payload);
-      const user = response.data.user;
+  try {
+    // 1️⃣ Login with Firebase
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const token = await userCredential.user.getIdToken();
 
-      // Logic must happen INSIDE the .then or after 'await'
-      if (user.role === "passenger") {
-        navigation.navigate("PassengerHome");
-      } else if (user.role === "driver") {
-        navigation.navigate("DriverHome");
-      } else if (user.role === "admin") {
-        navigation.navigate("AdminDashboard");
-      } else {
-        Alert.alert("Error", "Role not recognized");
+    // 2️⃣ Send token to backend
+    const response = await axios.get(
+      "http://bakeerathans-macbook-air.local:3000/api/auth/getprofile",
+      {
+        headers: { Authorization: `Bearer ${token}` },
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert("Error", "Invalid email or password");
-    } finally {
-      setLoading(false);
+    );
+
+    const user = response.data.user;
+
+    // 3️⃣ Role navigation
+    if (user.role === "passenger") {
+      navigation.navigate("PassengerHome");
+    } else if (user.role === "driver") {
+      navigation.navigate("DriverHome");
+    } else if (user.role === "admin") {
+      navigation.navigate("adminhome");
+    } else {
+      Alert.alert("Role Error", `User found but role '${user.role}' is not recognized.`);
     }
-  };
+
+  } catch (error: any) {
+    console.error("Login detail error:", error);
+
+    // Check if it's a Firebase Error
+    if (error.code === "auth/user-not-found") {
+      Alert.alert("Login Failed", "No user found with this email.");
+    } else if (error.code === "auth/wrong-password") {
+      Alert.alert("Login Failed", "Incorrect password.");
+    } 
+    // Check if it's a Network/Backend Error
+    else if (error.response) {
+      // Server responded with an error (401, 404, 500)
+      Alert.alert("Backend Error", error.response.data.message || "Server rejected the token.");
+    } else if (error.request) {
+      // Request was made but no response (Server is likely down)
+      Alert.alert("Connection Error", "Cannot connect to the backend server. Is it running?");
+    } else {
+      // Something else went wrong
+      Alert.alert("Error", error.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <LinearGradient colors={["#9c98a1ff", "#bf35f1ff"]} style={styles.container}>
@@ -105,7 +135,7 @@ export default function Login({ navigation }: any) {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => Alert.alert("Reset Password", "Link sent to email.")}>
+        <Pressable onPress={() =>navigation.navigate("adminhome")}> 
           <Text style={styles.forgot}>Forgot Password?</Text>
         </Pressable>
 

@@ -8,8 +8,12 @@ import {
   ScrollView,
   ImageBackground,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import axios from "axios";
+
+// This pulls the IP from your frontend/.env file
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Signup({ route, navigation }: any) {
 
@@ -35,14 +39,17 @@ export default function Signup({ route, navigation }: any) {
 
     try {
       setLoading(true);
-      const SIGNUP_URL = "http://bakeerathans-macbook-air.local:3000/api/auth/signup";
       
+      // ✅ Using Dynamic BASE_URL instead of .local address
+      const SIGNUP_URL = `${BASE_URL}/api/auth/signup`;
+      
+      console.log("Attempting signup at:", SIGNUP_URL);
+
       const response = await axios.post(SIGNUP_URL, payload);
 
-      // --- NEW NAVIGATION LOGIC ---
       Alert.alert("Success", "Account created successfully!");
 
-      // Navigate based on the 'role' variable already in your state
+      // --- NAVIGATION LOGIC ---
       if (role === "passenger") {
         navigation.replace("PassengerHome"); 
       } else if (role === "driver") {
@@ -50,26 +57,32 @@ export default function Signup({ route, navigation }: any) {
       } else if (role === "admin") {
         navigation.replace("adminhome");
       } else {
-        // Fallback if role is undefined
         navigation.replace("Login");
       }
-      // -----------------------------
 
     } catch (error: any) {
       console.error("❌ Signup error:", error);
+      
       if (error.response) {
+        // Server responded with an error (e.g., 400 User already exists)
         Alert.alert("Signup Failed", error.response.data.message || "Invalid data");
+      } else if (error.request) {
+        // Network/IP issue
+        Alert.alert(
+          "Network Error", 
+          `Cannot connect to ${BASE_URL}. \n1. Check if Backend is running. \n2. Check if IP is correct in .env.`
+        );
       } else {
-        Alert.alert("Network Error", "Cannot connect to backend server.");
+        Alert.alert("Error", error.message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-
   // Select background image based on role
   const backgroundImage = () => {
+    // Note: Ensure these images exist in your assets folder
     if (role === "passenger") return require("../assets/passenger-bg.jpg");
     if (role === "driver") return require("../assets/driver-bg.jpg");
     return require("../assets/default-bg.jpg");
@@ -86,6 +99,7 @@ export default function Signup({ route, navigation }: any) {
           placeholder="Username"
           value={username}
           onChangeText={setUsername}
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -94,6 +108,7 @@ export default function Signup({ route, navigation }: any) {
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -109,14 +124,14 @@ export default function Signup({ route, navigation }: any) {
           <>
             <TextInput
               style={styles.input}
-              placeholder="Bus Number"
+              placeholder="Bus Number (e.g. WP NB-1234)"
               value={busNumber}
               onChangeText={setBusNumber}
             />
 
             <TextInput
               style={styles.input}
-              placeholder="Bus Route"
+              placeholder="Bus Route (e.g. 138 Kottawa)"
               value={busRoute}
               onChangeText={setBusRoute}
             />
@@ -124,19 +139,20 @@ export default function Signup({ route, navigation }: any) {
         )}
 
         <Pressable
-          style={styles.button}
+          style={[styles.button, loading && { opacity: 0.7 }]}
           onPress={handleSignup}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
-            {loading ? "Signing up..." : "Signup"}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Signup</Text>
+          )}
         </Pressable>
 
         <Pressable onPress={() => navigation.navigate("Login")}>
           <Text style={styles.linkText}>Already have an account? Login</Text>
         </Pressable>
-
 
       </ScrollView>
     </ImageBackground>
@@ -145,47 +161,45 @@ export default function Signup({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-
   container: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)", // Darkened for better text visibility
   },
-
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     marginBottom: 30,
     color: "white",
+    textAlign: 'center'
   },
-
   input: {
     width: "100%",
     backgroundColor: "white",
     borderRadius: 8,
-    padding: 12,
+    padding: 15,
     marginBottom: 15,
+    fontSize: 16
   },
-
   button: {
     backgroundColor: "#6A0DAD",
     paddingVertical: 15,
     borderRadius: 8,
     width: "100%",
     alignItems: "center",
+    marginTop: 10
   },
-
   buttonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
   },
-
   linkText: {
     color: "white",
     marginTop: 20,
     textDecorationLine: "underline",
+    fontSize: 14
   },
 });

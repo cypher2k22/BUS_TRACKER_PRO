@@ -15,6 +15,8 @@ import axios from "axios";
  
 import { auth } from "../firebaseConfig";
 
+// This pulls the IP from your frontend/.env file
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -23,63 +25,69 @@ export default function Login({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  if (!email || !password) {
-    Alert.alert("Error", "Please enter email and password");
-    return;
-  }
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter email and password");
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    // 1️⃣ Login with Firebase
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const token = await userCredential.user.getIdToken();
+    try {
+      // 1️⃣ Login with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
 
-    // 2️⃣ Send token to backend
-    const response = await axios.get(
-      "http://bakeerathans-macbook-air.local:3000/api/auth/getprofile",
-      {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log("Firebase Auth Success, fetching profile from:", `${BASE_URL}/api/auth/getprofile`);
+
+      // 2️⃣ Send token to backend (Using Dynamic BASE_URL)
+      const response = await axios.get(
+        `${BASE_URL}/api/auth/getprofile`,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        }
+      );
+
+      const user = response.data.user;
+
+      // 3️⃣ Role-based navigation
+      if (user.role === "passenger") {
+        navigation.navigate("PassengerHome");
+      } else if (user.role === "driver") {
+        navigation.navigate("DriverHome");
+      } else if (user.role === "admin") {
+        navigation.navigate("adminhome");
+      } else {
+        Alert.alert("Role Error", `User found but role '${user.role}' is not recognized.`);
       }
-    );
 
-    const user = response.data.user;
+    } catch (error: any) {
+      console.error("Login detail error:", error);
 
-    // 3️⃣ Role navigation
-    if (user.role === "passenger") {
-      navigation.navigate("PassengerHome");
-    } else if (user.role === "driver") {
-      navigation.navigate("DriverHome");
-    } else if (user.role === "admin") {
-      navigation.navigate("adminhome");
-    } else {
-      Alert.alert("Role Error", `User found but role '${user.role}' is not recognized.`);
+      // Detailed Error Handling
+      if (error.code?.startsWith("auth/")) {
+        // Firebase specific errors
+        Alert.alert("Login Failed", error.message);
+      } else if (error.code === "ECONNABORTED") {
+        Alert.alert("Timeout", "The server took too long to respond.");
+      } else if (error.response) {
+        // Backend responded with 4xx or 5xx
+        Alert.alert("Backend Error", error.response.data.message || "Server rejected the token.");
+      } else if (error.request) {
+        // Request made but no response (Network/IP issue)
+        Alert.alert(
+          "Connection Error", 
+          `Cannot connect to ${BASE_URL}. \n1. Check if Backend is running. \n2. Check if IP is correct in .env.`
+        );
+      } else {
+        Alert.alert("Error", error.message);
+      }
+    } finally {
+      setLoading(false);
     }
-
-  } catch (error: any) {
-    console.error("Login detail error:", error);
-
-    // Check if it's a Firebase Error
-    if (error.code === "auth/user-not-found") {
-      Alert.alert("Login Failed", "No user found with this email.");
-    } else if (error.code === "auth/wrong-password") {
-      Alert.alert("Login Failed", "Incorrect password.");
-    } 
-    // Check if it's a Network/Backend Error
-    else if (error.response) {
-      // Server responded with an error (401, 404, 500)
-      Alert.alert("Backend Error", error.response.data.message || "Server rejected the token.");
-    } else if (error.request) {
-      // Request was made but no response (Server is likely down)
-      Alert.alert("Connection Error", "Cannot connect to the backend server. Is it running?");
-    } else {
-      // Something else went wrong
-      Alert.alert("Error", error.message);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <LinearGradient colors={["#9c98a1ff", "#bf35f1ff"]} style={styles.container}>
@@ -108,7 +116,6 @@ export default function Login({ navigation }: any) {
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeButton}
           >
-            {/* FIX: Changed 'username' to 'name' */}
             <MaterialCommunityIcons
               name={showPassword ? "eye-off" : "eye"}
               size={24}
@@ -136,7 +143,7 @@ export default function Login({ navigation }: any) {
           </Pressable>
         </View>
 
-        <Pressable onPress={() =>navigation.navigate("adminhome")}> 
+        <Pressable onPress={() => navigation.navigate("adminhome")}> 
           <Text style={styles.forgot}>Forgot Password?</Text>
         </Pressable>
 
@@ -168,8 +175,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 15,
   },
-  passwordContainer: { flexDirection: "row", alignItems: "flex-start" },
-  eyeButton: { position: 'absolute', right: 10, top: 12 },
+  passwordContainer: { flexDirection: "row", alignItems: "center" },
+  eyeButton: { position: 'absolute', right: 10 },
   loginBtn: {
     backgroundColor: "#6A0DAD",
     paddingVertical: 15,

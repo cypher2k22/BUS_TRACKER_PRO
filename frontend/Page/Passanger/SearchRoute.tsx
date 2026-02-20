@@ -3,54 +3,59 @@ import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, TextInp
 import axios from 'axios';
 import { auth } from '../../firebaseConfig';
 
+// ✅ Use the dynamic IP from your frontend/.env
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+
 export default function SearchRoutes({ navigation }: any) {
-  const [allBuses, setAllBuses] = useState<any[]>([]); // Full list from DB
-  const [filteredBuses, setFilteredBuses] = useState<any[]>([]); // List shown in UI
+  const [allBuses, setAllBuses] = useState<any[]>([]); 
+  const [filteredBuses, setFilteredBuses] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [startLoc, setStartLoc] = useState('');
   const [dest, setDest] = useState('');
 
-  // 1. Fetch ALL buses on component mount
   useEffect(() => {
     fetchAllBuses();
   }, []);
 
-  // 2. Filter the list whenever startLoc or dest changes
   useEffect(() => {
     const filtered = allBuses.filter(bus => {
-      const matchStart = bus.startinglocation.toLowerCase().includes(startLoc.toLowerCase());
-      const matchDest = bus.destination.toLowerCase().includes(dest.toLowerCase());
+      // Added optional chaining (?.) to prevent crashes if data is missing
+      const matchStart = bus.startinglocation?.toLowerCase().includes(startLoc.toLowerCase());
+      const matchDest = bus.destination?.toLowerCase().includes(dest.toLowerCase());
       return matchStart && matchDest;
     });
     setFilteredBuses(filtered);
   }, [startLoc, dest, allBuses]);
 
   const fetchAllBuses = async () => {
-  setLoading(true);
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    
-    // Using your verified hostname with the correct passenger prefix
-    const response = await axios.get(
-      `http://bakeerathans-macbook-air.local:3000/api/passenger/search-buses`, 
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    
-    console.log("✅ Connection Successful!");
-    setAllBuses(response.data.buses || []);
-    setFilteredBuses(response.data.buses || []);
-  } catch (error: any) {
-    if (error.response) {
-      console.error(`❌ Server responded with ${error.response.status}`);
-      console.error("Response data:", error.response.data);
-    } else {
-      console.error("❌ Network Error: Check if server is running");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      
+      // ✅ Dynamic URL: uses the IP from your .env file
+      const API_ENDPOINT = `${BASE_URL}/api/passenger/search-buses`;
+      
+      console.log("Attempting to fetch buses from:", API_ENDPOINT);
 
+      const response = await axios.get(API_ENDPOINT, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
+      console.log("✅ Connection Successful! Buses found:", response.data.buses?.length);
+      setAllBuses(response.data.buses || []);
+      setFilteredBuses(response.data.buses || []);
+    } catch (error: any) {
+      if (error.response) {
+        console.error(`❌ Server Error: ${error.response.status}`, error.response.data);
+      } else if (error.request) {
+        console.error("❌ Network Error: Backend unreachable at", BASE_URL);
+      } else {
+        console.error("❌ Error:", error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -82,7 +87,7 @@ export default function SearchRoutes({ navigation }: any) {
       ) : (
         <FlatList
           data={filteredBuses}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => item.id?.toString() || index.toString()}
           renderItem={({ item }) => (
             <Pressable 
               style={styles.routeCard} 
@@ -95,11 +100,13 @@ export default function SearchRoutes({ navigation }: any) {
           )}
           ListEmptyComponent={<Text style={styles.empty}>No matches found.</Text>}
         />
-         
       )}
     </View>
   );
 }
+
+// ... styles remain the same
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },

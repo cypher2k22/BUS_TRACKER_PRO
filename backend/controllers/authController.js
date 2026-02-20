@@ -9,7 +9,7 @@ const signup =async(req,res)=>{
     }
      
     if (role === "driver") {
-      if (!busNumber || !busRoute) {
+      if (!NICNumber || !LicenseNumber) {
         return res.status(400).json({ message: "Bus number and route required for drivers" });
       }
     }
@@ -33,9 +33,10 @@ const signup =async(req,res)=>{
          
         email:email,
          ...(role === "driver" && {
-        busNumber,
-        busRoute
-      }),
+       NICNumber: NICNumber,
+       LicenseNumber: LicenseNumber,
+     }),
+      
         createdAt:new Date()
     });
     res.status(201).json({message:"User created successfully",uid:userrecord.uid});

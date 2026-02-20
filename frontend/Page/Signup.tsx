@@ -24,18 +24,18 @@ export default function Signup({ route, navigation }: any) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busNumber, setBusNumber] = useState("");
-  const [busRoute, setBusRoute] = useState("");
+  const [nicnumber, setNicNumber] = useState("");
+  const [licensenumber, setLicenseNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Handle signup button click
   const handleSignup = async () => {
-    if (!username || !email || !password || (role === "driver" && (!busNumber || !busRoute))) {
+    if (!username || !email || !password || (role === "driver" && (!nicnumber || !licensenumber))) {
       Alert.alert("Error", "Please fill all required fields!");
       return;
     }
 
-    const payload = { username, email, password, role, busNumber, busRoute };
+    const payload = { username, email, password, role, nicnumber, licensenumber };
 
     try {
       setLoading(true);

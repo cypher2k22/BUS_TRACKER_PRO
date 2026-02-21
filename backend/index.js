@@ -4,7 +4,7 @@ const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
 const passengerRoutes = require("./routes/passengerRoutes");
-
+const driverRoutes = require("./routes/driverRoutes");
 const app = express();
 
 // Enable CORS for all origins (for mobile + LAN testing)
@@ -15,12 +15,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/passenger", passengerRoutes);
 app.use((req, res, next) => {
   console.log(`📩 INCOMING: ${req.method} ${req.url}`);
   next();
 });
+app.use("/api/auth", authRoutes);
+app.use("/api/passenger", passengerRoutes);
+app.use("/api/driver", driverRoutes);
+
 
 
 // Test endpoint to verify server connectivity

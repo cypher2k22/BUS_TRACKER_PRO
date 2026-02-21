@@ -2,15 +2,14 @@ const admin = require("../config/firebase");
 
 const signup =async(req,res)=>{
     try{
-        const{username,email,password,role,busNumber,
-      busRoute} = req.body;
+        const{username,email,password,role,NICNumber,LicenseNumber} = req.body;
         if (!email || !password || !role) {
       return res.status(400).json({ message: "Email, password, and role required" });
     }
      
     if (role === "driver") {
       if (!NICNumber || !LicenseNumber) {
-        return res.status(400).json({ message: "Bus number and route required for drivers" });
+        return res.status(400).json({ message: "NIC Number and License Number required for drivers" });
       }
     }
 

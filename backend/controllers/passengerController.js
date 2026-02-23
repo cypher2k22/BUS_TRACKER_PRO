@@ -45,11 +45,11 @@ const getBusLiveLocation = async (req, res) => {
             return res.status(404).json({ message: "Bus not found" });
         }
         const busData = busDoc.data();
-        const loDoc =await admin.firestore().collection("busLocations").doc(busId).get();
-        if (!loDoc.exists) {
+         const locationSnap = await admin.database().ref(`buslocations/${busId}`).get();
+        if (!locationSnap.exists) {
             return res.status(404).json({ message: "Location not found" });
         }
-        const locationData = loDoc.data();
+        const locationData = locationSnap.val();
 
         res.status(200).json({
             busId,

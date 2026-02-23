@@ -124,16 +124,17 @@ export default function Signup({ route, navigation }: any) {
           <>
             <TextInput
               style={styles.input}
-              placeholder="Bus Number (e.g. WP NB-1234)"
-              value={busNumber}
-              onChangeText={setBusNumber}
+              placeholder="NIC Number (e.g. 123456789V)"
+              value={nicnumber}
+              onChangeText={setNicNumber}
             />
 
             <TextInput
               style={styles.input}
-              placeholder="Bus Route (e.g. 138 Kottawa)"
-              value={busRoute}
-              onChangeText={setBusRoute}
+              placeholder="License Number (e.g. 123456789)"
+
+              value={licensenumber}
+              onChangeText={setLicenseNumber}
             />
           </>
         )}

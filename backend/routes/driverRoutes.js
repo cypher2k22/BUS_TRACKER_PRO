@@ -9,6 +9,7 @@ router.use(authorizeRole("driver"));
 // Get today’s trips
 router.get('/trips/today', driverController.getTodayTrips);
 
+
 // Start a trip
 router.post('/trips/:tripId/start', driverController.startTrip);
 

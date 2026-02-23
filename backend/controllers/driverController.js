@@ -1,5 +1,18 @@
 const admin = require('../config/firebase');
-
+// Push location to Realtime Database
+const pushToRealtimeDb = async (tripId, { latitude, longitude, speedKph, headingDeg,status  }) => {
+  if (latitude == null || longitude == null && !status ) return;
+  
+  const payload = {
+    latitude: Number(latitude),
+    longitude: Number(longitude),
+    speedKph: speedKph != null ? Number(speedKph) : null,
+    headingDeg: headingDeg != null ? Number(headingDeg) : null,
+    updatedAt: Date.now(),
+  };
+if (status) payload.status = status;
+  await admin.database().ref('busLocations').child(tripId).set(payload);
+};
 const INTERVAL_MS = 10000;
 const activeTrackers = new Map(); // driverUid -> { timer, tripId }
 
@@ -44,22 +57,52 @@ const getTodayTrips = async (req, res) => {
 // 2️⃣ Start trip
 const startTrip = async (req, res) => {
   try {
-
-   
     const { tripId } = req.params;
     let trip;
-    try{
+    try {
       trip = await getTrip(tripId);
     } catch (err) {
       return res.status(404).json({ message: "Trip not found" });
     }
-    
-     if (trip.driverUid !== req.user.uid) {
-  return res.status(403).json({ message: "Not authorized" });
-}
-    await admin.firestore().collection('ScheduledBuses').doc(tripId).update({ status: 'active' });
 
-    res.status(200).json({ message: 'Trip started', tripId });
+    if (trip.driverUid !== req.user.uid) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Update trip status
+    await admin.firestore().collection('ScheduledBuses').doc(tripId).update({ status: 'active' });
+    await pushToRealtimeDb(tripId, { status: 'active' });
+    // Start interval to auto-ping location
+    const timer = setInterval(async () => {
+     try { 
+      const tracker = activeTrackers.get(req.user.uid);
+      if (!tracker) return;
+
+      // Here, get latest GPS from driver device (mobile app)
+      const { latitude, longitude, speedKph, headingDeg } = tracker.latestLocation || {};
+      if (latitude && longitude) {
+        const locationData = {
+          latitude,
+          longitude,
+          speedKph: speedKph || null,
+          headingDeg: headingDeg || null,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          driverUid: req.user.uid
+        };
+
+        
+        await pushToRealtimeDb(tripId, locationData);
+        console.log(`Auto-updated location for trip ${tripId}`);
+      }
+      } catch (err) {
+    console.error('Interval location update error:', err.message);
+  }
+    }, INTERVAL_MS);
+
+    // Save timer in activeTrackers
+    activeTrackers.set(req.user.uid, { tripId, timer });
+
+    res.status(200).json({ message: 'Trip started with auto-ping', tripId });
   } catch (err) {
     console.error('Start trip error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -71,7 +114,13 @@ const pingLocation = async (req, res) => {
   try {
     const { tripId } = req.params;
     const { latitude, longitude, speedKph, headingDeg } = req.body;
-    const trip = await getTrip(tripId);
+
+    // Save latest GPS in tracker so interval can use it
+    const tracker = activeTrackers.get(req.user.uid);
+    if (tracker) {
+      tracker.latestLocation = { latitude, longitude, speedKph, headingDeg };
+      activeTrackers.set(req.user.uid, tracker);
+    }
 
     const locationData = {
       latitude: Number(latitude),
@@ -82,8 +131,7 @@ const pingLocation = async (req, res) => {
       driverUid: req.user.uid
     };
 
-    await admin.firestore().collection('busLocations').doc(tripId).set(locationData);
-
+    await pushToRealtimeDb(tripId, locationData);
     res.status(200).json({ message: 'Location updated', tripId });
   } catch (err) {
     console.error('Ping location error:', err);
@@ -101,7 +149,7 @@ const stopTrip = async (req, res) => {
     }
 
     await admin.firestore().collection('ScheduledBuses').doc(tripId).update({ status: 'completed' });
-
+    await pushToRealtimeDb(tripId, { status: 'completed' });
     const tracker = activeTrackers.get(req.user.uid);
     if (tracker?.timer) clearInterval(tracker.timer);
     activeTrackers.delete(req.user.uid);
@@ -124,6 +172,7 @@ const getStatus = (req, res) => {
     intervalMs: INTERVAL_MS
   });
 };
+
 
 module.exports = {
   getTodayTrips,

@@ -1,56 +1,37 @@
-const admin = require('../config/firebase');
-// Push location to Realtime Database
-const pushToRealtimeDb = async (tripId, { latitude, longitude, speedKph, headingDeg,status  }) => {
-  if (latitude == null || longitude == null && !status ) return;
-  
+const tripRepo = require("../repos/trip.repo");
+const admin = require("../config/firebase");
+
+const INTERVAL_MS = 10000;
+const activeTrackers = new Map(); // driverUid -> { timer, tripId }
+
+// Push to Realtime DB
+const pushToRealtimeDb = async (tripId, { latitude, longitude, speedKph, headingDeg, status }) => {
+  if ((latitude == null || longitude == null) && !status) return;
+
   const payload = {
-    latitude: Number(latitude),
-    longitude: Number(longitude),
+    latitude: latitude != null ? Number(latitude) : undefined,
+    longitude: longitude != null ? Number(longitude) : undefined,
     speedKph: speedKph != null ? Number(speedKph) : null,
     headingDeg: headingDeg != null ? Number(headingDeg) : null,
     updatedAt: Date.now(),
   };
-if (status) payload.status = status;
-  await admin.database().ref('busLocations').child(tripId).set(payload);
-};
-const INTERVAL_MS = 10000;
-const activeTrackers = new Map(); // driverUid -> { timer, tripId }
 
-// Helper: get trip document by ID
-const getTrip = async (tripId) => {
-  const tripDoc = await admin.firestore().collection('ScheduledBuses').doc(tripId).get();
-  if (!tripDoc.exists) throw new Error('Trip not found');
-  return { id: tripDoc.id, ...tripDoc.data() };
+  if (status) payload.status = status;
+
+  await admin.database().ref("busLocations").child(tripId).set(payload);
 };
 
 // 1️⃣ Get driver’s trips for today
 const getTodayTrips = async (req, res) => {
   try {
     const driverUid = req.user.uid;
-     console.log("Driver UID:", driverUid);
-     const todayDate = new Date(); // local time
-    const yyyy = todayDate.getFullYear();
-    const mm = String(todayDate.getMonth() + 1).padStart(2, '0'); 
-    const dd = String(todayDate.getDate()).padStart(2, '0');
-    const today = `${yyyy}-${mm}-${dd}`; //
-    console.log("Local today:", today);
-    
-    const snapshot = await admin.firestore()
-      .collection('ScheduledBuses')
-      .where('driverUid', '==', driverUid)
-      .where('date', '==', today)
-      .get();
+    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
 
-      console.log("Number of trips found:", snapshot.size);
-    const trips = snapshot.docs.map(doc => {
-      console.log("tri id:",doc.id);
-      return {
-       id: doc.id, ...doc.data() };
-    });
+    const trips = await tripRepo.getTripsByDriverAndDate(driverUid, today);
     res.status(200).json({ trips });
   } catch (err) {
-    console.error('Get trips error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Get trips error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -58,54 +39,31 @@ const getTodayTrips = async (req, res) => {
 const startTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
-    let trip;
-    try {
-      trip = await getTrip(tripId);
-    } catch (err) {
-      return res.status(404).json({ message: "Trip not found" });
-    }
+    const trip = await tripRepo.getTripById(tripId);
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
+    if (trip.driverUid !== req.user.uid) return res.status(403).json({ message: "Not authorized" });
 
-    if (trip.driverUid !== req.user.uid) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+    await tripRepo.updateTrip(tripId, { status: "active" });
+    await pushToRealtimeDb(tripId, { status: "active" });
 
-    // Update trip status
-    await admin.firestore().collection('ScheduledBuses').doc(tripId).update({ status: 'active' });
-    await pushToRealtimeDb(tripId, { status: 'active' });
-    // Start interval to auto-ping location
     const timer = setInterval(async () => {
-     try { 
-      const tracker = activeTrackers.get(req.user.uid);
-      if (!tracker) return;
-
-      // Here, get latest GPS from driver device (mobile app)
-      const { latitude, longitude, speedKph, headingDeg } = tracker.latestLocation || {};
-      if (latitude && longitude) {
-        const locationData = {
-          latitude,
-          longitude,
-          speedKph: speedKph || null,
-          headingDeg: headingDeg || null,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          driverUid: req.user.uid
-        };
-
-        
-        await pushToRealtimeDb(tripId, locationData);
-        console.log(`Auto-updated location for trip ${tripId}`);
-      }
+      try {
+        const tracker = activeTrackers.get(req.user.uid);
+        if (!tracker) return;
+        const { latitude, longitude, speedKph, headingDeg } = tracker.latestLocation || {};
+        if (latitude != null && longitude != null) {
+          await pushToRealtimeDb(tripId, { latitude, longitude, speedKph, headingDeg });
+        }
       } catch (err) {
-    console.error('Interval location update error:', err.message);
-  }
+        console.error("Interval update error:", err.message);
+      }
     }, INTERVAL_MS);
 
-    // Save timer in activeTrackers
     activeTrackers.set(req.user.uid, { tripId, timer });
-
-    res.status(200).json({ message: 'Trip started with auto-ping', tripId });
+    res.status(200).json({ message: "Trip started with auto-ping", tripId });
   } catch (err) {
-    console.error('Start trip error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Start trip error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -115,27 +73,14 @@ const pingLocation = async (req, res) => {
     const { tripId } = req.params;
     const { latitude, longitude, speedKph, headingDeg } = req.body;
 
-    // Save latest GPS in tracker so interval can use it
     const tracker = activeTrackers.get(req.user.uid);
-    if (tracker) {
-      tracker.latestLocation = { latitude, longitude, speedKph, headingDeg };
-      activeTrackers.set(req.user.uid, tracker);
-    }
+    if (tracker) tracker.latestLocation = { latitude, longitude, speedKph, headingDeg };
 
-    const locationData = {
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-      speedKph: speedKph != null ? Number(speedKph) : null,
-      headingDeg: headingDeg != null ? Number(headingDeg) : null,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      driverUid: req.user.uid
-    };
-
-    await pushToRealtimeDb(tripId, locationData);
-    res.status(200).json({ message: 'Location updated', tripId });
+    await pushToRealtimeDb(tripId, { latitude, longitude, speedKph, headingDeg, driverUid: req.user.uid });
+    res.status(200).json({ message: "Location updated", tripId });
   } catch (err) {
-    console.error('Ping location error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Ping location error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -143,41 +88,32 @@ const pingLocation = async (req, res) => {
 const stopTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
-        const trip = await getTrip(tripId);
-        if (trip.driverUid !== req.user.uid) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+    const trip = await tripRepo.getTripById(tripId);
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
+    if (trip.driverUid !== req.user.uid) return res.status(403).json({ message: "Not authorized" });
 
-    await admin.firestore().collection('ScheduledBuses').doc(tripId).update({ status: 'completed' });
-    await pushToRealtimeDb(tripId, { status: 'completed' });
+    await tripRepo.updateTrip(tripId, { status: "completed" });
+    await pushToRealtimeDb(tripId, { status: "completed" });
+
     const tracker = activeTrackers.get(req.user.uid);
     if (tracker?.timer) clearInterval(tracker.timer);
     activeTrackers.delete(req.user.uid);
 
-    res.status(200).json({ message: 'Trip stopped', tripId });
+    res.status(200).json({ message: "Trip stopped", tripId });
   } catch (err) {
-    console.error('Stop trip error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Stop trip error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // 5️⃣ Get tracking status
 const getStatus = (req, res) => {
   const tracker = activeTrackers.get(req.user.uid);
-  if (!tracker) return res.status(200).json({ running: false });
-
   res.status(200).json({
-    running: true,
-    tripId: tracker.tripId,
-    intervalMs: INTERVAL_MS
+    running: !!tracker,
+    tripId: tracker?.tripId,
+    intervalMs: INTERVAL_MS,
   });
 };
 
-
-module.exports = {
-  getTodayTrips,
-  startTrip,
-  pingLocation,
-  stopTrip,
-  getStatus
-};
+module.exports = { getTodayTrips, startTrip, pingLocation, stopTrip, getStatus };

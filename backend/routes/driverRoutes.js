@@ -5,7 +5,7 @@ const authenticateUser = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/roleMiddleware');
 // All routes require driver authentication
 router.use(authenticateUser);
-router.use(authorizeRole("driver"));
+router.use(authorizeRole(["driver"]));
 // Get today’s trips
 router.get('/trips/today', driverController.getTodayTrips);
 

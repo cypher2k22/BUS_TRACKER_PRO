@@ -15,12 +15,15 @@ import DriverHome from "./Page/driver/Home";
 import MyRoute from "./Page/driver/MyRoute";
 import PassengerInfo from "./Page/driver/PassengerInfo";
 import TodaySchedule from "./Page/driver/TodaySchedule";
+import LiveMap from "./Page/Passanger/LiveMap";
+import { Toast } from "react-native-toast-message/lib/src/Toast";
 
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
+    <>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={Home} />
@@ -36,8 +39,11 @@ export default function App() {
         <Stack.Screen name="MyRoute" component={MyRoute} />
         <Stack.Screen name="PassengerInfo" component={PassengerInfo} />
         <Stack.Screen name="TodaySchedule" component={TodaySchedule} />
+        <Stack.Screen name="LiveMap" component={LiveMap} />
 
       </Stack.Navigator>
     </NavigationContainer>
+           <Toast /> 
+    </>
   );
 }

@@ -30,6 +30,12 @@ export default function Home({ navigation }: any) {
         </Pressable>
         <Pressable
           style={styles.button}
+          onPress={() => navigation.navigate("LiveMap", { busId: "bus123" })}
+        >
+          <Text style={styles.buttonText}>Live Map</Text>
+        </Pressable>
+        <Pressable
+          style={styles.button}
           onPress={() => navigation.navigate("Feedback")}
         >
           <Text style={styles.buttonText}>Feedback</Text>
@@ -41,6 +47,7 @@ export default function Home({ navigation }: any) {
         >
           <Text style={styles.buttonText}>Back</Text>
         </Pressable>
+
         
       </ScrollView>
     </View>

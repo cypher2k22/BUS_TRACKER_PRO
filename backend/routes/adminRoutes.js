@@ -11,11 +11,19 @@ router.use(authenticateUser);
 router.use(authorizeRole(["admin"]));
 
 // Routes
+router.get("/stats", adminController.getStats);
 router.post("/routes", adminController.createRoute);
 router.get("/routes", adminController.listRoutes);
+router.delete("/routes/:routeId", adminController.deleteRoute);
 
+router.get("/buses", adminController.listBuses);
 router.post("/buses", adminController.createBus);
+router.get("/live", adminController.getLiveBuses);
 router.put("/buses/:busId", adminController.updateBus);
 router.delete("/buses/:busId", adminController.deleteBus);
+
+router.get("/drivers", adminController.listDrivers);
+router.post("/drivers", adminController.createDriver);
+router.delete("/drivers/:driverId", adminController.deleteDriver);
 
 module.exports = router;

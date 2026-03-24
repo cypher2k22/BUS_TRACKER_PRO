@@ -11,6 +11,28 @@ const CACHE_TTL = 60 * 1000;
 
 
 // =============================
+// HELPER FUNCTIONS
+// =============================
+const getDriverUidByLicense = async (licenseNumber) => {
+  const snapshot = await admin.firestore().collection("users")
+    .where("role", "==", "driver")
+    .where("LicenseNumber", "==", licenseNumber)
+    .get();
+
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data().uid;
+};
+
+const getRouteIdByNumber = async (routeNumber) => {
+  const snapshot = await routesCol
+    .where("routenumber", "==", routeNumber)
+    .get();
+
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].id;
+};
+
+// =============================
 // CREATE BUS (ADMIN)
 // =============================
 const createBus = async ({
@@ -33,7 +55,7 @@ const createBus = async ({
 
   // 🔥 Get stops from route automatically
   const routeDoc = await routesCol.doc(routeId).get();
- const stops = routeDoc.exists ? routeDoc.data().stops : [];
+  const stops = routeDoc.exists ? routeDoc.data().stops : [];
   if (!routeDoc.exists) {
     throw new Error("Route not found");
   }
@@ -97,12 +119,12 @@ const updateBusLocation = async (
 // =============================
 const updateBusDetails = async (
   busId,
-  {plateNumber, capacity, routeId, driverUid, date, status, starttime,endtime }
+  { plateNumber, capacity, routeId, driverUid, date, status, starttime, endtime }
 ) => {
 
   const updatePayload = {};
 
-  
+
   if (plateNumber) updatePayload.plateNumber = plateNumber;
   if (capacity) updatePayload.capacity = capacity;
   if (driverUid) updatePayload.driverUid = driverUid;

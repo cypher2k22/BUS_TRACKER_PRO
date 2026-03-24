@@ -1,20 +1,37 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import axios from "axios";
+import { auth } from "../../firebaseConfig";
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Feedback({ navigation }: any) {
   const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(0);
 
-  const submitFeedback = () => {
+  const submitFeedback = async () => {
     if (!feedback || rating === 0) {
       Alert.alert("Error", "Please give rating and feedback 😊");
       return;
     }
 
-    Alert.alert("Thank You!", "Your feedback was submitted successfully ❤️");
-    setFeedback("");
-    setRating(0);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      await axios.post(`${BASE_URL}/api/passenger/feedback`, {
+        feedback,
+        rating
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      Alert.alert("Thank You!", "Your feedback was submitted successfully ❤️");
+      setFeedback("");
+      setRating(0);
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Failed to submit feedback. Please try again.");
+    }
   };
 
   return (

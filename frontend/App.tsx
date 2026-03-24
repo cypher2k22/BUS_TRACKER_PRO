@@ -2,6 +2,7 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+// Import your existing pages
 import Home from "./Page/Home";
 import Login from "./Page/Login";
 import Signup from "./Page/Signup";
@@ -17,33 +18,52 @@ import PassengerInfo from "./Page/driver/PassengerInfo";
 import TodaySchedule from "./Page/driver/TodaySchedule";
 import LiveMap from "./Page/Passanger/LiveMap";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
-
+import Buses from "./Page/admin/Buses";
+import LiveTracking from "./Page/admin/LiveTracking";
+import AdminRoutes from "./Page/admin/AdminRoutes";
+import AdminDrivers from "./Page/admin/AdminDrivers";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <>
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="Signup" component={Signup} />
-        <Stack.Screen name="RoleSelector" component={RoleSelector} />
-        <Stack.Screen name="PassengerHome" component={PassengerHome} />
-        <Stack.Screen name="Feedback" component={Feedback} />
-        <Stack.Screen name="Schedule" component={Schedule} />
-        <Stack.Screen name="SearchRoute" component={SearchRoute} />
-        <Stack.Screen name="adminhome" component={adminHome} />
-        <Stack.Screen name="DriverHome" component={DriverHome} />
-        <Stack.Screen name="MyRoute" component={MyRoute} />
-        <Stack.Screen name="PassengerInfo" component={PassengerInfo} />
-        <Stack.Screen name="TodaySchedule" component={TodaySchedule} />
-        <Stack.Screen name="LiveMap" component={LiveMap} />
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {/* Main Auth & Entry */}
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Signup" component={Signup} />
+          <Stack.Screen name="RoleSelector" component={RoleSelector} />
 
-      </Stack.Navigator>
-    </NavigationContainer>
-           <Toast /> 
+          {/* Passenger Side */}
+          <Stack.Screen name="PassengerHome" component={PassengerHome} />
+          <Stack.Screen name="Feedback" component={Feedback} />
+          <Stack.Screen name="Schedule" component={Schedule} />
+          <Stack.Screen name="SearchRoute" component={SearchRoute} />
+          <Stack.Screen name="LiveMap" component={LiveMap} />
+
+          {/* Driver Side */}
+          <Stack.Screen name="DriverHome" component={DriverHome} />
+          <Stack.Screen name="MyRoute" component={MyRoute} />
+          <Stack.Screen name="PassengerInfo" component={PassengerInfo} />
+          <Stack.Screen name="TodaySchedule" component={TodaySchedule} />
+
+          {/* Admin Side - Standard Names */}
+          <Stack.Screen name="adminhome" component={adminHome} />
+          <Stack.Screen name="LiveTracking" component={LiveTracking} />
+          <Stack.Screen name="Buses" component={Buses} />
+
+          {/* FIX: Aliases for the 'NAVIGATE' errors you received */}
+          {/* These match the exact strings the new Git code is calling */}
+          <Stack.Screen name="AdminLiveTracking" component={LiveTracking} />
+          <Stack.Screen name="AdminRoutes" component={AdminRoutes} />
+          <Stack.Screen name="AdminDrivers" component={AdminDrivers} />
+          <Stack.Screen name="AdminHome" component={adminHome} />
+
+        </Stack.Navigator>
+      </NavigationContainer>
+      <Toast />
     </>
   );
 }

@@ -3,17 +3,32 @@ import { View, Text, FlatList, StyleSheet, TextInput, Pressable, Alert } from "r
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function AdminRoutes({ navigation }: any) {
     const [routes, setRoutes] = useState<any[]>([]);
+    const [buses, setBuses] = useState<any[]>([]);
     const [name, setName] = useState("");
     const [stops, setStops] = useState("");
 
     useEffect(() => {
         fetchRoutes();
+        fetchBuses();
     }, []);
+
+    const fetchBuses = async () => {
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            const res = await axios.get(`${BASE_URL}/api/admin/buses`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setBuses(res.data);
+        } catch (err) {
+            console.log("Error fetching buses");
+        }
+    };
 
     const fetchRoutes = async () => {
         try {
@@ -29,7 +44,7 @@ export default function AdminRoutes({ navigation }: any) {
 
     const addRoute = async () => {
         if (!name || !stops) {
-            Alert.alert("Error", "Name and stops required");
+            Toast.show({ type: "error", text1: "Error", text2: "Name and stops required" });
             return;
         }
 
@@ -48,9 +63,10 @@ export default function AdminRoutes({ navigation }: any) {
             setName("");
             setStops("");
             fetchRoutes();
+            Toast.show({ type: "success", text1: "Success", text2: "Route added successfully" });
         } catch (err) {
             console.error(err);
-            Alert.alert("Error", "Failed to add route");
+            Toast.show({ type: "error", text1: "Error", text2: "Failed to add route" });
         }
     };
 
@@ -61,9 +77,10 @@ export default function AdminRoutes({ navigation }: any) {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchRoutes();
+            Toast.show({ type: "info", text1: "Deleted", text2: "Route deleted successfully" });
         } catch (err) {
             console.error(err);
-            Alert.alert("Error", "Failed to delete route");
+            Toast.show({ type: "error", text1: "Error", text2: "Failed to delete route" });
         }
     };
 
@@ -95,19 +112,25 @@ export default function AdminRoutes({ navigation }: any) {
             <FlatList
                 data={routes}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.routeCard}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.routeText}>{item.name}</Text>
-                            <Text style={styles.stopsText}>
-                                Stops: {item.stops.map((s: any) => s.name).join(", ")}
-                            </Text>
+                renderItem={({ item }) => {
+                    const assignedBusesCount = buses.filter(b => b.routeNumber === item.name || String(b.routeId) === String(item.id)).length;
+                    return (
+                        <View style={styles.routeCard}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.routeText}>{item.name}</Text>
+                                <Text style={styles.stopsText}>
+                                    Stops: {item.stops.map((s: any) => s.name).join(", ")}
+                                </Text>
+                                <Text style={styles.busIndicator}>
+                                    <MaterialCommunityIcons name="bus" size={12} color="#888" /> {assignedBusesCount} buses assigned
+                                </Text>
+                            </View>
+                            <Pressable onPress={() => deleteRoute(item.id)}>
+                                <MaterialCommunityIcons name="trash-can" size={24} color="red" />
+                            </Pressable>
                         </View>
-                        <Pressable onPress={() => deleteRoute(item.id)}>
-                            <MaterialCommunityIcons name="trash-can" size={24} color="red" />
-                        </Pressable>
-                    </View>
-                )}
+                    )
+                }}
             />
         </View>
     );
@@ -123,5 +146,6 @@ const styles = StyleSheet.create({
     btnText: { color: "white", fontWeight: "bold" },
     routeCard: { flexDirection: "row", alignItems: "center", backgroundColor: "white", padding: 15, borderRadius: 12, marginBottom: 8, elevation: 2 },
     routeText: { fontSize: 16, fontWeight: "bold" },
-    stopsText: { color: "#666", marginTop: 5, fontSize: 12 }
+    stopsText: { color: "#666", marginTop: 5, fontSize: 12 },
+    busIndicator: { color: "#888", marginTop: 3, fontSize: 12, fontStyle: "italic" }
 });

@@ -25,7 +25,7 @@ const getDriverUidByLicense = async (licenseNumber) => {
 
 const getRouteIdByNumber = async (routeNumber) => {
   const snapshot = await routesCol
-    .where("routenumber", "==", routeNumber)
+    .where("name", "==", routeNumber)
     .get();
 
   if (snapshot.empty) return null;

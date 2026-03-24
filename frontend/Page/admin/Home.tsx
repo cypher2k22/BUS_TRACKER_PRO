@@ -12,16 +12,31 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { auth } from "../../firebaseConfig";
+import Toast from "react-native-toast-message";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Home({ navigation }: any) {
   const [stats, setStats] = useState<any>(null);
+  const [liveBuses, setLiveBuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
+    fetchLiveBuses();
   }, []);
+
+  const fetchLiveBuses = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await axios.get(`${BASE_URL}/api/admin/live`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLiveBuses(res.data);
+    } catch (err) {
+      console.log("Error fetching live buses", err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -34,7 +49,7 @@ export default function Home({ navigation }: any) {
       setStats(res.data);
     } catch (err) {
       console.log("Admin stats error:", err);
-      Alert.alert("Error", "Failed to load admin data");
+      Toast.show({ type: "error", text1: "Error", text2: "Failed to load admin data" });
     } finally {
       setLoading(false);
     }
@@ -60,9 +75,24 @@ export default function Home({ navigation }: any) {
 
         <View style={styles.cardGrid}>
           <Card title="Total Buses" value={stats?.buses || 0} icon="bus" />
-          <Card title="Drivers" value={stats?.drivers || 0} icon="account" />
-          <Card title="Routes" value={stats?.routes || 0} icon="map-marker-path" />
           <Card title="Live Buses" value={stats?.live || 0} icon="radar" />
+          <Card title="Drivers" value={stats?.drivers || 0} icon="card-account-details-outline" />
+          <Card title="Passengers" value={stats?.passengers || 0} icon="account-group" />
+          <Card title="Routes" value={stats?.routes || 0} icon="map-marker-path" />
+        </View>
+
+        <Text style={styles.sectionTitle}>Recent Activity — Active Buses</Text>
+        <View style={styles.activityContainer}>
+          {liveBuses.length > 0 ? (
+            liveBuses.map((bus) => (
+              <View key={bus.busId} style={styles.activityCard}>
+                <MaterialCommunityIcons name="bus-side" size={24} color="#6A0DAD" />
+                <Text style={styles.activityText}>Bus {bus.busNumber} is currently running route</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No active buses at the moment.</Text>
+          )}
         </View>
 
         <View style={styles.actions}>
@@ -73,13 +103,23 @@ export default function Home({ navigation }: any) {
           />
           <ActionBtn
             text="Manage Drivers"
-            icon="account-group"
+            icon="card-account-details-outline"
             onPress={() => navigation.navigate("AdminDrivers")}
+          />
+          <ActionBtn
+            text="Manage Passengers"
+            icon="account-group"
+            onPress={() => navigation.navigate("AdminPassengers")}
           />
           <ActionBtn
             text="Manage Routes"
             icon="routes"
             onPress={() => navigation.navigate("AdminRoutes")}
+          />
+          <ActionBtn
+            text="View Feedback"
+            icon="comment-multiple-outline"
+            onPress={() => navigation.navigate("AdminFeedback")}
           />
           <ActionBtn
             text="Live Tracking"
@@ -125,6 +165,7 @@ const styles = StyleSheet.create({
     color: "white",
     textAlign: "center",
     marginBottom: 20,
+    marginTop: "10%"
   },
 
   cardGrid: {
@@ -154,6 +195,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6A0DAD",
     marginTop: 3,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  activityContainer: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 15,
+    padding: 15,
+  },
+
+  activityCard: {
+    backgroundColor: "white",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    elevation: 2,
+  },
+
+  activityText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500"
+  },
+
+  emptyText: {
+    color: "white",
+    fontStyle: "italic",
+    textAlign: "center"
   },
 
   actions: {

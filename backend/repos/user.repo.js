@@ -3,16 +3,27 @@ const fstore = admin.firestore();
 const USERS_COLLECTION = "users";
 
 const createUser = async ({ username, email, password, role, NICNumber, LicenseNumber }) => {
-  const userRecord = await admin.auth().createUser({ email, password, displayName: username });
+  let userRecord;
+  try {
+    userRecord = await admin.auth().createUser({ email, password, displayName: username });
+  } catch (err) {
+    throw err;
+  }
 
-  await fstore.collection(USERS_COLLECTION).doc(userRecord.uid).set({
-    uid: userRecord.uid,
-    username,
-    email,
-    role,
-    ...(role === "driver" && { NICNumber, LicenseNumber }),
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  try {
+    await fstore.collection(USERS_COLLECTION).doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      username,
+      email,
+      role,
+      ...(role === "driver" && { NICNumber, LicenseNumber }),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    // Rollback Auth user creation if Firestore fails
+    await admin.auth().deleteUser(userRecord.uid);
+    throw err;
+  }
 
   return userRecord.uid;
 };
@@ -27,6 +38,11 @@ const listDrivers = async () => {
   return snapshot.docs.map(doc => doc.data());
 };
 
+const listPassengers = async () => {
+  const snapshot = await fstore.collection(USERS_COLLECTION).where("role", "==", "passenger").get();
+  return snapshot.docs.map(doc => doc.data());
+};
+
 const deleteUser = async (uid) => {
   // Delete from Auth
   await admin.auth().deleteUser(uid);
@@ -35,4 +51,12 @@ const deleteUser = async (uid) => {
   return true;
 };
 
-module.exports = { createUser, getUserByUid, listDrivers, deleteUser };
+const toggleUserStatus = async (uid, isDisabled) => {
+  await admin.auth().updateUser(uid, { disabled: isDisabled });
+  await fstore.collection(USERS_COLLECTION).doc(uid).update({
+    status: isDisabled ? "disabled" : "active"
+  });
+  return true;
+};
+
+module.exports = { createUser, getUserByUid, listDrivers, listPassengers, deleteUser, toggleUserStatus };

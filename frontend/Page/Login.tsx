@@ -12,7 +12,8 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
- 
+import Toast from "react-native-toast-message";
+
 import { auth } from "../firebaseConfig";
 
 // This pulls the IP from your frontend/.env file
@@ -26,7 +27,7 @@ export default function Login({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+      Toast.show({ type: "error", text1: "Error", text2: "Please enter email and password" });
       return;
     }
 
@@ -43,7 +44,7 @@ export default function Login({ navigation }: any) {
       const response = await axios.get(
         `${BASE_URL}/api/auth/getprofile`,
         {
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
@@ -60,7 +61,7 @@ export default function Login({ navigation }: any) {
       } else if (user.role === "admin") {
         navigation.navigate("adminhome");
       } else {
-        Alert.alert("Role Error", `User found but role '${user.role}' is not recognized.`);
+        Toast.show({ type: "error", text1: "Role Error", text2: `User role '${user.role}' not recognized.` });
       }
 
     } catch (error: any) {
@@ -68,21 +69,22 @@ export default function Login({ navigation }: any) {
 
       // Detailed Error Handling
       if (error.code?.startsWith("auth/")) {
-        // Firebase specific errors
-        Alert.alert("Login Failed", error.message);
+        // Firebase specific errors E.g. auth/network-request-failed (Verify .env IP or simulator net connection)
+        Toast.show({ type: "error", text1: "Login Failed", text2: error.message });
       } else if (error.code === "ECONNABORTED") {
-        Alert.alert("Timeout", "The server took too long to respond.");
+        Toast.show({ type: "error", text1: "Timeout", text2: "The server took too long to respond." });
       } else if (error.response) {
         // Backend responded with 4xx or 5xx
-        Alert.alert("Backend Error", error.response.data.message || "Server rejected the token.");
+        Toast.show({ type: "error", text1: "Backend Error", text2: error.response.data.message || "Server rejected the token." });
       } else if (error.request) {
         // Request made but no response (Network/IP issue)
-        Alert.alert(
-          "Connection Error", 
-          `Cannot connect to ${BASE_URL}. \n1. Check if Backend is running. \n2. Check if IP is correct in .env.`
-        );
+        Toast.show({
+          type: "error",
+          text1: "Connection Error",
+          text2: `Cannot connect to ${BASE_URL}. Check if IP is correct in .env.`
+        });
       } else {
-        Alert.alert("Error", error.message);
+        Toast.show({ type: "error", text1: "Error", text2: error.message });
       }
     } finally {
       setLoading(false);
@@ -124,8 +126,8 @@ export default function Login({ navigation }: any) {
           </Pressable>
         </View>
 
-        <Pressable 
-          style={[styles.loginBtn, loading && { opacity: 0.7 }]} 
+        <Pressable
+          style={[styles.loginBtn, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -143,7 +145,7 @@ export default function Login({ navigation }: any) {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => navigation.navigate("adminhome")}> 
+        <Pressable onPress={() => navigation.navigate("adminhome")}>
           <Text style={styles.forgot}>Forgot Password?</Text>
         </Pressable>
 

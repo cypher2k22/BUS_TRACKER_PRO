@@ -25,5 +25,11 @@ router.delete("/buses/:busId", adminController.deleteBus);
 router.get("/drivers", adminController.listDrivers);
 router.post("/drivers", adminController.createDriver);
 router.delete("/drivers/:driverId", adminController.deleteDriver);
+router.put("/drivers/:driverId/status", adminController.updateDriverStatus);
+
+router.get("/passengers", adminController.listPassengers);
+router.delete("/passengers/:passengerId", adminController.deletePassenger);
+
+router.get("/feedback", adminController.getFeedback);
 
 module.exports = router;

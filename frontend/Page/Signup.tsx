@@ -35,14 +35,21 @@ export default function Signup({ route, navigation }: any) {
       return;
     }
 
-    const payload = { username, email, password, role, nicnumber, licensenumber };
+    const payload = {
+      username,
+      email,
+      password,
+      role,
+      NICNumber: nicnumber,
+      LicenseNumber: licensenumber
+    };
 
     try {
       setLoading(true);
-      
+
       // ✅ Using Dynamic BASE_URL instead of .local address
       const SIGNUP_URL = `${BASE_URL}/api/auth/signup`;
-      
+
       console.log("Attempting signup at:", SIGNUP_URL);
 
       const response = await axios.post(SIGNUP_URL, payload);
@@ -51,7 +58,7 @@ export default function Signup({ route, navigation }: any) {
 
       // --- NAVIGATION LOGIC ---
       if (role === "passenger") {
-        navigation.replace("PassengerHome"); 
+        navigation.replace("PassengerHome");
       } else if (role === "driver") {
         navigation.replace("DriverHome");
       } else if (role === "admin") {
@@ -62,14 +69,14 @@ export default function Signup({ route, navigation }: any) {
 
     } catch (error: any) {
       console.error("❌ Signup error:", error);
-      
+
       if (error.response) {
         // Server responded with an error (e.g., 400 User already exists)
         Alert.alert("Signup Failed", error.response.data.message || "Invalid data");
       } else if (error.request) {
         // Network/IP issue
         Alert.alert(
-          "Network Error", 
+          "Network Error",
           `Cannot connect to ${BASE_URL}. \n1. Check if Backend is running. \n2. Check if IP is correct in .env.`
         );
       } else {

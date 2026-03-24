@@ -22,6 +22,8 @@ import Buses from "./Page/admin/Buses";
 import LiveTracking from "./Page/admin/LiveTracking";
 import AdminRoutes from "./Page/admin/AdminRoutes";
 import AdminDrivers from "./Page/admin/AdminDrivers";
+import AdminPassengers from "./Page/admin/AdminPassengers";
+import AdminFeedback from "./Page/admin/AdminFeedback";
 
 const Stack = createNativeStackNavigator();
 
@@ -56,9 +58,12 @@ export default function App() {
 
           {/* FIX: Aliases for the 'NAVIGATE' errors you received */}
           {/* These match the exact strings the new Git code is calling */}
+          <Stack.Screen name="AdminBuses" component={Buses} />
           <Stack.Screen name="AdminLiveTracking" component={LiveTracking} />
           <Stack.Screen name="AdminRoutes" component={AdminRoutes} />
           <Stack.Screen name="AdminDrivers" component={AdminDrivers} />
+          <Stack.Screen name="AdminPassengers" component={AdminPassengers} />
+          <Stack.Screen name="AdminFeedback" component={AdminFeedback} />
           <Stack.Screen name="AdminHome" component={adminHome} />
 
         </Stack.Navigator>

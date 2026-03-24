@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TextInput, Pressable, Alert, ScrollVi
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -32,7 +33,7 @@ export default function AdminDrivers({ navigation }: any) {
 
     const addDriver = async () => {
         if (!username || !email || !password || !nic || !license) {
-            Alert.alert("Error", "All fields are required");
+            Toast.show({ type: "error", text1: "Error", text2: "All fields are required" });
             return;
         }
 
@@ -54,9 +55,26 @@ export default function AdminDrivers({ navigation }: any) {
             setNic("");
             setLicense("");
             fetchDrivers();
+            Toast.show({ type: "success", text1: "Success", text2: "Driver added successfully" });
         } catch (err: any) {
             console.error(err);
-            Alert.alert("Error", err.response?.data?.message || "Failed to add driver");
+            Toast.show({ type: "error", text1: "Error", text2: err.response?.data?.message || "Failed to add driver" });
+        }
+    };
+
+    const toggleDriverStatus = async (id: string, currentStatus: string) => {
+        const isDisabled = currentStatus !== "disabled";
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            await axios.put(`${BASE_URL}/api/admin/drivers/${id}/status`, {
+                isDisabled
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchDrivers();
+            Toast.show({ type: "success", text1: "Success", text2: `Driver account ${isDisabled ? 'disabled' : 'enabled'}` });
+        } catch (err) {
+            Toast.show({ type: "error", text1: "Error", text2: "Failed to update driver status" });
         }
     };
 
@@ -67,9 +85,10 @@ export default function AdminDrivers({ navigation }: any) {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchDrivers();
+            Toast.show({ type: "info", text1: "Deleted", text2: "Driver deleted successfully" });
         } catch (err) {
             console.error(err);
-            Alert.alert("Error", "Failed to delete driver");
+            Toast.show({ type: "error", text1: "Error", text2: "Failed to delete driver" });
         }
     };
 
@@ -99,10 +118,18 @@ export default function AdminDrivers({ navigation }: any) {
                         <View style={{ flex: 1 }}>
                             <Text style={styles.driverText}>{item.username} ({item.LicenseNumber})</Text>
                             <Text style={styles.subText}>{item.email}</Text>
+                            <Text style={styles.statusText}>Status: {item.status || "active"}</Text>
                         </View>
-                        <Pressable onPress={() => deleteDriver(item.uid)}>
-                            <MaterialCommunityIcons name="trash-can" size={24} color="red" />
-                        </Pressable>
+                        <View style={styles.actionColumn}>
+                            <Pressable
+                                style={[styles.statusBtn, item.status === "disabled" ? styles.enableBtn : styles.disableBtn]}
+                                onPress={() => toggleDriverStatus(item.uid, item.status)}>
+                                <Text style={styles.actionText}>{item.status === 'disabled' ? 'Enable' : 'Disable'}</Text>
+                            </Pressable>
+                            <Pressable onPress={() => deleteDriver(item.uid)} style={styles.deleteBtn}>
+                                <Text style={styles.delete}>Delete</Text>
+                            </Pressable>
+                        </View>
                     </View>
                 )}
             />
@@ -118,7 +145,15 @@ const styles = StyleSheet.create({
     input: { borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 10, marginBottom: 8 },
     addBtn: { backgroundColor: "#6A0DAD", padding: 12, borderRadius: 12, alignItems: "center", marginTop: 5 },
     btnText: { color: "white", fontWeight: "bold" },
-    driverCard: { flexDirection: "row", alignItems: "center", backgroundColor: "white", padding: 15, borderRadius: 12, marginBottom: 8, elevation: 2 },
+    driverCard: { flexDirection: "row", alignItems: "center", backgroundColor: "white", padding: 15, borderRadius: 12, marginBottom: 8, elevation: 2, justifyContent: "space-between" },
     driverText: { fontSize: 16, fontWeight: "bold" },
-    subText: { color: "#666", marginTop: 2, fontSize: 13 }
+    subText: { color: "#666", marginTop: 2, fontSize: 13 },
+    statusText: { fontSize: 13, color: "#888", marginTop: 2 },
+    actionColumn: { alignItems: "flex-end" },
+    statusBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, marginBottom: 8 },
+    enableBtn: { backgroundColor: "#28a745" },
+    disableBtn: { backgroundColor: "#dc3545" },
+    actionText: { color: "white", fontSize: 12, fontWeight: "bold" },
+    deleteBtn: { paddingVertical: 4, paddingHorizontal: 10 },
+    delete: { color: "red", fontWeight: "bold", fontSize: 13 },
 });

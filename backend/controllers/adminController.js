@@ -115,15 +115,17 @@ const getStats = async (req, res) => {
   try {
     const db = require("../config/firebase").firestore();
 
-    const [busesSnap, driversSnap, routesSnap] = await Promise.all([
+    const [busesSnap, driversSnap, routesSnap, passengersSnap] = await Promise.all([
       db.collection("ScheduledBuses").get(),
       db.collection("users").where("role", "==", "driver").get(),
       db.collection("routes").get(),
+      db.collection("users").where("role", "==", "passenger").get(),
     ]);
 
     const stats = {
       buses: busesSnap.size,
       drivers: driversSnap.size,
+      passengers: passengersSnap.size,
       routes: routesSnap.size,
       live: busesSnap.docs.filter(d => d.data().status === 'active').length
     };
@@ -164,6 +166,57 @@ const deleteDriver = async (req, res) => {
   }
 };
 
+const updateDriverStatus = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { isDisabled } = req.body;
+    await userRepo.toggleUserStatus(driverId, isDisabled);
+    res.json({ message: `Driver account ${isDisabled ? 'disabled' : 'enabled'} successfully` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ================= PASSENGERS =================
+const listPassengers = async (req, res) => {
+  try {
+    const passengers = await userRepo.listPassengers();
+    res.json(passengers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const deletePassenger = async (req, res) => {
+  try {
+    const { passengerId } = req.params;
+    await userRepo.deleteUser(passengerId);
+    res.json({ message: "Passenger deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ================= FEEDBACK =================
+const getFeedback = async (req, res) => {
+  try {
+    const admin = require("../config/firebase");
+    const snapshot = await admin.firestore()
+      .collection("feedback")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const feedbackList = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.json(feedbackList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createRoute,
   listRoutes,
@@ -176,5 +229,9 @@ module.exports = {
   getLiveBuses,
   listDrivers,
   createDriver,
-  deleteDriver
+  deleteDriver,
+  updateDriverStatus,
+  listPassengers,
+  deletePassenger,
+  getFeedback
 };

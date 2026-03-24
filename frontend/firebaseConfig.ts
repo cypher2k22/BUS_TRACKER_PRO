@@ -1,6 +1,6 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+// @ts-ignore
+import { initializeAuth, getReactNativePersistence, Auth } from "firebase/auth";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
@@ -14,17 +14,18 @@ const firebaseConfig = {
   databaseURL: "https://busguiderapp-2ed8d-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-let app, auth;
+let app: FirebaseApp;
+let auth: Auth;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
   });
-  app.__auth = auth; // Fast Refresh protection
+  (app as any).__auth = auth; // Fast Refresh protection
 } else {
   app = getApp();
-  auth = app.__auth || initializeAuth(app, {
+  auth = (app as any).__auth || initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
   });
 }

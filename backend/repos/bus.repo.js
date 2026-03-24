@@ -1,4 +1,5 @@
 const admin = require("../config/firebase");
+const { normalizeScheduleDate } = require("../utils/scheduleDate");
 
 const busesCol = admin.firestore().collection("ScheduledBuses");
 const routesCol = admin.firestore().collection("routes");
@@ -14,13 +15,17 @@ const CACHE_TTL = 60 * 1000;
 // HELPER FUNCTIONS
 // =============================
 const getDriverUidByLicense = async (licenseNumber) => {
+  const licenseKey = String(licenseNumber ?? "").trim();
+  if (!licenseKey) return null;
   const snapshot = await admin.firestore().collection("users")
     .where("role", "==", "driver")
-    .where("LicenseNumber", "==", licenseNumber)
+    .where("LicenseNumber", "==", licenseKey)
     .get();
 
   if (snapshot.empty) return null;
-  return snapshot.docs[0].data().uid;
+  const driverDoc = snapshot.docs[0];
+  const driverData = driverDoc.data();
+  return driverData.uid || driverDoc.id;
 };
 
 const getRouteIdByNumber = async (routeNumber) => {
@@ -55,21 +60,22 @@ const createBus = async ({
 
   // 🔥 Get stops from route automatically
   const routeDoc = await routesCol.doc(routeId).get();
-  const stops = routeDoc.exists ? routeDoc.data().stops : [];
   if (!routeDoc.exists) {
     throw new Error("Route not found");
   }
 
   const routeData = routeDoc.data();
+  const stops = routeData.stops || [];
+  const dateNormalized = normalizeScheduleDate(date);
 
   const payload = {
     plateNumber,
     capacity,
     routeNumber,
     driverLicense,
-    date,
+    driverUid,
+    date: dateNormalized,
     status,
-    stops: routeData.stops || [],
     starttime,
     endtime,
     stops,
@@ -128,7 +134,7 @@ const updateBusDetails = async (
   if (plateNumber) updatePayload.plateNumber = plateNumber;
   if (capacity) updatePayload.capacity = capacity;
   if (driverUid) updatePayload.driverUid = driverUid;
-  if (date) updatePayload.date = date;
+  if (date) updatePayload.date = normalizeScheduleDate(date);
   if (status) updatePayload.status = status;
   if (starttime) updatePayload.starttime = starttime;
   if (endtime) updatePayload.endtime = endtime;
@@ -379,11 +385,12 @@ const findRoutesForPassenger = async ({
   lat = null,
   lng = null
 }) => {
+  const dateKey = normalizeScheduleDate(date);
 
   const direct = await findDirectBuses({
     from,
     to,
-    date,
+    date: dateKey,
     lat,
     lng
   });
@@ -393,7 +400,7 @@ const findRoutesForPassenger = async ({
   return findMultiBusRoutes({
     from,
     to,
-    date,
+    date: dateKey,
     lat,
     lng
   });

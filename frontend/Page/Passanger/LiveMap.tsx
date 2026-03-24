@@ -21,7 +21,7 @@ export default function LiveMap({ route, navigation }: any) {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Match backend keys: latitude and longitude
-      if (res.data.latitude) {
+      if (res.data.latitude != null && res.data.longitude != null) {
         setLocation({ lat: res.data.latitude, lng: res.data.longitude });
       }
     } catch (err) {

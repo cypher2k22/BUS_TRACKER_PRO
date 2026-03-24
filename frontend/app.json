@@ -20,6 +20,9 @@
     "plugins": [
       "expo-font",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "apiUrl": ""
+    }
   }
 }

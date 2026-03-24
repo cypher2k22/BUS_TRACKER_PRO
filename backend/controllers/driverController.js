@@ -1,37 +1,37 @@
 const tripRepo = require("../repos/trip.repo");
 const admin = require("../config/firebase");
+const { todayScheduleDate } = require("../utils/scheduleDate");
 
 const INTERVAL_MS = 10000;
-const activeTrackers = new Map(); // driverUid -> { timer, tripId }
+const activeTrackers = new Map(); // driverUid -> { timer, tripId, latestLocation }
 
 // Push to Realtime DB
 const pushToRealtimeDb = async (tripId, { latitude, longitude, speedKph, headingDeg, status }) => {
   if ((latitude == null || longitude == null) && !status) return;
 
   const payload = {
-    latitude: latitude != null ? Number(latitude) : undefined,
-    longitude: longitude != null ? Number(longitude) : undefined,
-    speedKph: speedKph != null ? Number(speedKph) : null,
-    headingDeg: headingDeg != null ? Number(headingDeg) : null,
     updatedAt: Date.now(),
   };
 
+  if (latitude != null) payload.latitude = Number(latitude);
+  if (longitude != null) payload.longitude = Number(longitude);
+  if (speedKph != null) payload.speedKph = Number(speedKph);
+  if (headingDeg != null) payload.headingDeg = Number(headingDeg);
   if (status) payload.status = status;
 
-  await admin.database().ref("busLocations").child(tripId).set(payload);
+  await admin.database().ref("busLocations").child(tripId).update(payload);
 };
 
 // 1️⃣ Get driver’s trips for today
 const getTodayTrips = async (req, res) => {
   try {
     const driverUid = req.user.uid;
-    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
-
+    const today = todayScheduleDate();
     const trips = await tripRepo.getTripsByDriverAndDate(driverUid, today);
     res.status(200).json({ trips });
   } catch (err) {
     console.error("Get trips error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message || "Server error" });
   }
 };
 
@@ -40,17 +40,29 @@ const startTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
     const trip = await tripRepo.getTripById(tripId);
-    if (!trip) return res.status(404).json({ message: "Trip not found" });
-    if (trip.driverUid !== req.user.uid) return res.status(403).json({ message: "Not authorized" });
 
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
+
+    // FIX: Auth check logic
+    if (!trip.driverUid || trip.driverUid === "") {
+        console.log("No driver assigned, assigning to current user...");
+        await tripRepo.updateTrip(tripId, { driverUid: req.user.uid });
+    } else if (trip.driverUid !== req.user.uid) {
+        console.log("UID Mismatch! DB:", trip.driverUid, "Auth:", req.user.uid);
+        return res.status(403).json({ message: "This trip belongs to another driver" });
+    }
+
+    // Update status in Firestore and Realtime DB
     await tripRepo.updateTrip(tripId, { status: "active" });
     await pushToRealtimeDb(tripId, { status: "active" });
 
+    // Set up the interval for background location pings
     const timer = setInterval(async () => {
       try {
         const tracker = activeTrackers.get(req.user.uid);
-        if (!tracker) return;
-        const { latitude, longitude, speedKph, headingDeg } = tracker.latestLocation || {};
+        if (!tracker || !tracker.latestLocation) return;
+        
+        const { latitude, longitude, speedKph, headingDeg } = tracker.latestLocation;
         if (latitude != null && longitude != null) {
           await pushToRealtimeDb(tripId, { latitude, longitude, speedKph, headingDeg });
         }
@@ -59,8 +71,10 @@ const startTrip = async (req, res) => {
       }
     }, INTERVAL_MS);
 
-    activeTrackers.set(req.user.uid, { tripId, timer });
-    res.status(200).json({ message: "Trip started with auto-ping", tripId });
+    // Save to local memory map
+    activeTrackers.set(req.user.uid, { tripId, timer, latestLocation: null });
+
+    res.status(200).json({ message: "Trip started successfully", tripId });
   } catch (err) {
     console.error("Start trip error:", err);
     res.status(500).json({ message: "Server error" });
@@ -74,9 +88,13 @@ const pingLocation = async (req, res) => {
     const { latitude, longitude, speedKph, headingDeg } = req.body;
 
     const tracker = activeTrackers.get(req.user.uid);
-    if (tracker) tracker.latestLocation = { latitude, longitude, speedKph, headingDeg };
+    // Store latest location in memory so the interval can pick it up
+    if (tracker) {
+        tracker.latestLocation = { latitude, longitude, speedKph, headingDeg };
+    }
 
-    await pushToRealtimeDb(tripId, { latitude, longitude, speedKph, headingDeg, driverUid: req.user.uid });
+    // Immediate push to Realtime DB
+    await pushToRealtimeDb(tripId, { latitude, longitude, speedKph, headingDeg });
     res.status(200).json({ message: "Location updated", tripId });
   } catch (err) {
     console.error("Ping location error:", err);
@@ -89,6 +107,7 @@ const stopTrip = async (req, res) => {
   try {
     const { tripId } = req.params;
     const trip = await tripRepo.getTripById(tripId);
+    
     if (!trip) return res.status(404).json({ message: "Trip not found" });
     if (trip.driverUid !== req.user.uid) return res.status(403).json({ message: "Not authorized" });
 

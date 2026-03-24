@@ -1,4 +1,5 @@
 const busRepo = require("../repos/bus.repo");
+const { todayScheduleDate } = require("../utils/scheduleDate");
 
 
 // =======================================
@@ -56,7 +57,7 @@ const submitFeedback = async (req, res) => {
 // =======================================
 const getSchedule = async (req, res) => {
   try {
-    const date = new Date().toISOString().split("T")[0];
+    const date = todayScheduleDate();
     const admin = require("../config/firebase");
     const snapshot = await admin.firestore()
       .collection("ScheduledBuses")

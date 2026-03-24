@@ -15,6 +15,7 @@ interface Trip {
 export default function ScheduleScreen({ navigation }: any) {
   const [schedule, setSchedule] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTrips();
@@ -22,6 +23,7 @@ export default function ScheduleScreen({ navigation }: any) {
 
   const fetchTrips = async () => {
     try {
+      setLoadError(null);
       const user = auth.currentUser;
       if (!user) {
         setLoading(false);
@@ -34,8 +36,14 @@ export default function ScheduleScreen({ navigation }: any) {
       });
 
       setSchedule(response.data.trips || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch today's trips:", error);
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Could not load trips";
+      setLoadError(msg);
+      setSchedule([]);
     } finally {
       setLoading(false);
     }
@@ -52,6 +60,8 @@ export default function ScheduleScreen({ navigation }: any) {
 
         {loading ? (
           <ActivityIndicator size="large" color="#4A0DAD" />
+        ) : loadError ? (
+          <Text style={styles.noDataText}>{loadError}</Text>
         ) : schedule.length > 0 ? (
           schedule.map((item, index) => {
             // Determine route name based on stops if available

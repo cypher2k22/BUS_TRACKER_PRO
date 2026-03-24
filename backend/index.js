@@ -1,6 +1,7 @@
 const express = require("express");
 require("dotenv").config();
 const cors = require("cors");
+const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const passengerRoutes = require("./routes/passengerRoutes");
@@ -31,12 +32,24 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is reachable!" });
 });
 
+/** Confirms you reached this Node process (use same host:port as the app). */
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    service: "bus-tracker-backend",
+    cwd: process.cwd(),
+    backendRoot: path.resolve(__dirname),
+    uptimeSec: Math.floor(process.uptime()),
+  });
+});
+
 // Start server on LAN-accessible host
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Test URL: http://localhost:${PORT}/api/test`);
+  console.log(`❤️ Health: http://localhost:${PORT}/api/health`);
 });
 
 module.exports = app;

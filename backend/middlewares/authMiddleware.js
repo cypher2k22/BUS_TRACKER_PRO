@@ -5,8 +5,8 @@ const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Unauthorized" });
+    if (!authHeader || !authHeader.startsWith("Bearer ") || authHeader.split(" ")[1] === "undefined" || authHeader.split(" ")[1] === "null") {
+      return res.status(401).json({ message: "Unauthorized: Missing, improperly formatted, or invalid token" });
     }
 
     const idToken = authHeader.split(" ")[1];
@@ -16,7 +16,7 @@ const authenticateUser = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("AUTH ERROR:", error.message);
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
   }
 };
 

@@ -246,6 +246,7 @@ const findDirectBuses = async ({
     results.push({
       id: bus.id,
       plateNumber: bus.plateNumber,
+      routeNumber: bus.routeNumber,
       stops,
       boardingStop: stops[startIndex],
       destinationStop: stops[endIndex],

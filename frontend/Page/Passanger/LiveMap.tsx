@@ -7,7 +7,7 @@ import app from "../../firebaseConfig";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : (process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000");
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://172.20.10.5:3000";
 
 export default function LiveMap({ route, navigation }: any) {
   const { busId, start, end } = route.params;
@@ -16,10 +16,8 @@ export default function LiveMap({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState<Region | null>(null);
   const [isFollowing, setIsFollowing] = useState(true);
-  
   const hasInitializedMap = useRef(false);
   const isFollowingRef = useRef(true);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const mapRef = useRef<MapView>(null);
 
   const setFollowMode = (follow: boolean) => {
@@ -108,16 +106,8 @@ export default function LiveMap({ route, navigation }: any) {
       console.error("Firebase DB error:", error);
     });
 
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.5, duration: 1000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true })
-      ])
-    ).start();
-
     return () => {
       unsubscribe();
-      pulseAnim.stopAnimation();
     };
   }, [busId]);
 
@@ -150,7 +140,7 @@ export default function LiveMap({ route, navigation }: any) {
     }
   };
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6A0DAD" />;
+  if (loading || !region) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6A0DAD" />;
 
   return (
     <View style={{ flex: 1 }}>
@@ -158,9 +148,8 @@ export default function LiveMap({ route, navigation }: any) {
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
-        region={region || undefined}
+        initialRegion={region}
         onMapReady={onMapReady}
-        onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
         onPanDrag={() => {
           if (isFollowingRef.current) {
             setFollowMode(false);
@@ -171,6 +160,8 @@ export default function LiveMap({ route, navigation }: any) {
         scrollEnabled={true}
         pitchEnabled={true}
         rotateEnabled={true}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
       >
         {/* Draw Route Polyline */}
         {stops.length > 0 && (
@@ -219,10 +210,12 @@ export default function LiveMap({ route, navigation }: any) {
 
         {/* Draw Bus Live Location */}
         {location && (
-          <Marker coordinate={{ latitude: location.lat, longitude: location.lng }} title="Live Bus">
-            <Animated.View style={[styles.pulse, { transform: [{ scale: pulseAnim }] }]} />
-            <View style={styles.markerCore} />
-          </Marker>
+          <Marker 
+             coordinate={{ latitude: location.lat, longitude: location.lng }} 
+             title="Live Bus"
+             description="Currently Active"
+             pinColor="purple"
+          />
         )}
       </MapView>
 
@@ -269,8 +262,6 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
-  pulse: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(106, 13, 173, 0.3)' },
-  markerCore: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#6A0DAD', position: 'absolute', top: 5, left: 5, borderWidth: 2, borderColor: '#fff' },
   stopMarker: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#fff', borderWidth: 2, borderColor: '#4A90E2', justifyContent: 'center', alignItems: 'center' },
   stopMarkerInner: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#4A90E2' },
   backButton: { 

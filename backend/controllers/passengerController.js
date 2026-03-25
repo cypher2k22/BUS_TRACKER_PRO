@@ -8,6 +8,7 @@ const { todayScheduleDate } = require("../utils/scheduleDate");
 const searchBuses = async (req, res) => {
   try {
     const { from, to, date, lat, lng } = req.query;
+    console.log(`[PASSENGER SEARCH] from: ${from}, to: ${to}, date: ${date}`);
     if (!from || !to || !date) return res.status(400).json({ message: "From, To and Date are required" });
 
     const passengerLat = lat ? Number(lat) : null;
@@ -137,10 +138,33 @@ const getLiveBuses = async (req, res) => {
   }
 };
 
+// 🌟 NEW: Fetch all database operational stops dynamically
+const getAllStops = async (req, res) => {
+  try {
+    const admin = require("../config/firebase");
+    const snapshot = await admin.firestore().collection("routes").get();
+    
+    let allStops = new Map();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.stops) {
+        data.stops.forEach(stop => allStops.set(stop.name, stop)); // Map enforces uniqueness automatically
+      }
+    });
+
+    console.log(`[PASSENGER STOPS] Dynamically exported ${allStops.size} unified stops.`);
+    res.status(200).json({ success: true, stops: Array.from(allStops.values()) });
+  } catch (err) {
+    console.error("[PASSENGER STOPS ERROR]", err);
+    res.status(500).json({ message: "Server error extracting master stops endpoint." });
+  }
+};
+
 module.exports = {
   searchBuses,
   getBusLiveLocation,
   submitFeedback,
   getSchedule,
-  getLiveBuses
+  getLiveBuses,
+  getAllStops
 };

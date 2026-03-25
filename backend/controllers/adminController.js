@@ -44,14 +44,14 @@ const detectStops = async (req, res) => {
     });
 
     if (!routesResponse.data || !routesResponse.data.routes || routesResponse.data.routes.length === 0) {
-        console.error("❌ No routes found in Google API response:", JSON.stringify(routesResponse.data, null, 2));
-        return res.status(404).json({ message: "No route found between these locations" });
+      console.error("❌ No routes found in Google API response:", JSON.stringify(routesResponse.data, null, 2));
+      return res.status(404).json({ message: "No route found between these locations" });
     }
 
     const route = routesResponse.data.routes[0];
     if (!route.polyline || !route.legs || !route.legs[0].steps) {
-        console.error("❌ Unexpected route format from Google API:", JSON.stringify(route, null, 2));
-        return res.status(500).json({ message: "Google API returned an incomplete route" });
+      console.error("❌ Unexpected route format from Google API:", JSON.stringify(route, null, 2));
+      return res.status(500).json({ message: "Google API returned an incomplete route" });
     }
 
     const encodedPolyline = route.polyline.encodedPolyline;
@@ -60,19 +60,19 @@ const detectStops = async (req, res) => {
     // 3. Sample points and find stops
     const stopsMap = new Map();
     const samplePoints = [startCoords];
-    steps.forEach((s, i) => { 
-        if (i % 5 === 0 && s.endLocation?.latLng) { 
-            samplePoints.push({ 
-                lat: s.endLocation.latLng.latitude, 
-                lng: s.endLocation.latLng.longitude 
-            }); 
-        } 
+    steps.forEach((s, i) => {
+      if (i % 5 === 0 && s.endLocation?.latLng) {
+        samplePoints.push({
+          lat: s.endLocation.latLng.latitude,
+          lng: s.endLocation.latLng.longitude
+        });
+      }
     });
     samplePoints.push(endCoords);
 
     for (const point of samplePoints.slice(0, 10)) {
       try {
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${point.lat},${point.lng}&radius=2000&type=bus_station&key=${GOOGLE_MAPS_API_KEY}`;
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${point.lat},${point.lng}&radius=500&type=bus_station&key=${GOOGLE_MAPS_API_KEY}`;
         const placesResponse = await axios.get(placesUrl);
         if (placesResponse.data.results) {
           placesResponse.data.results.forEach(p => {
@@ -98,7 +98,7 @@ const detectStops = async (req, res) => {
 
   } catch (err) {
     if (err.response) {
-        console.error("❌ API Error Data:", JSON.stringify(err.response.data, null, 2));
+      console.error("❌ API Error Data:", JSON.stringify(err.response.data, null, 2));
     }
     console.error("❌ Detect stops error:", err.message);
     res.status(500).json({ message: err.message || "Internal server error during stop detection" });

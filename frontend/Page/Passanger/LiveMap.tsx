@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, ActivityIndicator, StyleSheet, Text, Animated, Pressable } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, Animated, Pressable, Platform } from "react-native";
 import MapView, { Marker, Polyline, Region } from "react-native-maps";
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
@@ -7,7 +7,7 @@ import app from "../../firebaseConfig";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : (process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000");
 
 export default function LiveMap({ route, navigation }: any) {
   const { busId } = route.params;

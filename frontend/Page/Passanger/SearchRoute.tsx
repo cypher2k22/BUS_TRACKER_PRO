@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
 import { Dropdown } from 'react-native-element-dropdown';
 import * as Location from 'expo-location';
 import axios from "axios";
@@ -7,7 +7,7 @@ import { auth } from "../../firebaseConfig";
 import Toast from 'react-native-toast-message';
 
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : (process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000");
 
 // Ensure coordinates are included for the GPS "Nearest Stop" feature
 const BUS_STOPS = [

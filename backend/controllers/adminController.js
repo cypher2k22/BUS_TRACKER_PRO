@@ -1,8 +1,110 @@
 const routeRepo = require("../repos/route.repo");
 const busRepo = require("../repos/bus.repo");
 const userRepo = require("../repos/user.repo");
+const axios = require("axios");
+const polyline = require("polyline");
+
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+// Helper to geocode an address
+const geocode = async (address) => {
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`;
+  const response = await axios.get(url);
+  if (response.data.status !== "OK") throw new Error(`Geocoding failed for ${address}`);
+  return response.data.results[0].geometry.location;
+};
 
 // ================= ROUTES =================
+const detectStops = async (req, res) => {
+  try {
+    const { start, end } = req.body;
+    if (!start || !end) return res.status(400).json({ message: "Start and end locations required" });
+
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error("❌ GOOGLE_MAPS_API_KEY is missing in backend .env");
+      return res.status(500).json({ message: "Google Maps API Key not configured on server" });
+    }
+
+    // 1. Geocode
+    const startCoords = await geocode(start);
+    const endCoords = await geocode(end);
+
+    // 2. Get Route (Directions V2)
+    const routesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
+    const routesResponse = await axios.post(routesUrl, {
+      origin: { location: { latLng: { latitude: startCoords.lat, longitude: startCoords.lng } } },
+      destination: { location: { latLng: { latitude: endCoords.lat, longitude: endCoords.lng } } },
+      travelMode: "DRIVE"
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "routes.polyline.encodedPolyline,routes.legs.steps"
+      }
+    });
+
+    if (!routesResponse.data || !routesResponse.data.routes || routesResponse.data.routes.length === 0) {
+        console.error("❌ No routes found in Google API response:", JSON.stringify(routesResponse.data, null, 2));
+        return res.status(404).json({ message: "No route found between these locations" });
+    }
+
+    const route = routesResponse.data.routes[0];
+    if (!route.polyline || !route.legs || !route.legs[0].steps) {
+        console.error("❌ Unexpected route format from Google API:", JSON.stringify(route, null, 2));
+        return res.status(500).json({ message: "Google API returned an incomplete route" });
+    }
+
+    const encodedPolyline = route.polyline.encodedPolyline;
+    const steps = route.legs[0].steps;
+
+    // 3. Sample points and find stops
+    const stopsMap = new Map();
+    const samplePoints = [startCoords];
+    steps.forEach((s, i) => { 
+        if (i % 5 === 0 && s.endLocation?.latLng) { 
+            samplePoints.push({ 
+                lat: s.endLocation.latLng.latitude, 
+                lng: s.endLocation.latLng.longitude 
+            }); 
+        } 
+    });
+    samplePoints.push(endCoords);
+
+    for (const point of samplePoints.slice(0, 10)) {
+      try {
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${point.lat},${point.lng}&radius=2000&type=bus_station&key=${GOOGLE_MAPS_API_KEY}`;
+        const placesResponse = await axios.get(placesUrl);
+        if (placesResponse.data.results) {
+          placesResponse.data.results.forEach(p => {
+            stopsMap.set(p.place_id, {
+              name: p.name,
+              latitude: p.geometry.location.lat,
+              longitude: p.geometry.location.lng,
+              id: p.place_id
+            });
+          });
+        }
+      } catch (placeErr) {
+        console.warn("Place search failed for sample point:", point, placeErr.message);
+      }
+    }
+
+    res.json({
+      polyline: encodedPolyline,
+      stops: Array.from(stopsMap.values()),
+      startLocation: { name: start, ...startCoords },
+      endLocation: { name: end, ...endCoords }
+    });
+
+  } catch (err) {
+    if (err.response) {
+        console.error("❌ API Error Data:", JSON.stringify(err.response.data, null, 2));
+    }
+    console.error("❌ Detect stops error:", err.message);
+    res.status(500).json({ message: err.message || "Internal server error during stop detection" });
+  }
+};
+
 const createRoute = async (req, res) => {
   try {
     const { name, stops, description, polyline } = req.body;
@@ -233,5 +335,6 @@ module.exports = {
   updateDriverStatus,
   listPassengers,
   deletePassenger,
-  getFeedback
+  getFeedback,
+  detectStops
 };

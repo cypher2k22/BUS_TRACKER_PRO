@@ -11,6 +11,8 @@ import PassengerHome from "./Page/Passanger/Home";
 import Feedback from "./Page/Passanger/Feedback";
 import Schedule from "./Page/Passanger/Schedule";
 import SearchRoute from "./Page/Passanger/SearchRoute";
+import PassengerSearch from "./Page/Passanger/PassengerSearch";
+import RouteMap from "./Page/Passanger/RouteMap";
 import adminHome from "./Page/admin/Home";
 import DriverHome from "./Page/driver/Home";
 import MyRoute from "./Page/driver/MyRoute";
@@ -43,6 +45,8 @@ export default function App() {
           <Stack.Screen name="Feedback" component={Feedback} />
           <Stack.Screen name="Schedule" component={Schedule} />
           <Stack.Screen name="SearchRoute" component={SearchRoute} />
+          <Stack.Screen name="PassengerSearch" component={PassengerSearch} />
+          <Stack.Screen name="RouteMap" component={RouteMap} />
           <Stack.Screen name="LiveMap" component={LiveMap} />
 
           {/* Driver Side */}

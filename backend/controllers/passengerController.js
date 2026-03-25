@@ -102,9 +102,45 @@ const getBusLiveLocation = async (req, res) => {
   }
 };
 
+const getLiveBuses = async (req, res) => {
+  try {
+    const admin = require("../config/firebase");
+    const date = todayScheduleDate();
+    
+    // Get all buses that are currently active for today
+    const snapshot = await admin.firestore()
+      .collection("ScheduledBuses")
+      .where("date", "==", date)
+      .where("status", "==", "active")
+      .get();
+
+    const activeTrips = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Fetch live locations from Realtime DB
+    const locationsSnap = await admin.database().ref('busLocations').get();
+    const locations = locationsSnap.exists() ? locationsSnap.val() : {};
+
+    const liveData = activeTrips.map(trip => ({
+      tripId: trip.id,
+      busNumber: trip.plateNumber,
+      routeNumber: trip.routeNumber,
+      lat: locations[trip.id]?.latitude || 0,
+      lng: locations[trip.id]?.longitude || 0,
+      speed: locations[trip.id]?.speedKph || 0,
+      updatedAt: locations[trip.id]?.updatedAt || 0
+    })).filter(b => b.lat !== 0 && b.lng !== 0);
+
+    res.json({ success: true, count: liveData.length, data: liveData });
+  } catch (err) {
+    console.error("GET LIVE BUSES ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   searchBuses,
   getBusLiveLocation,
   submitFeedback,
-  getSchedule
+  getSchedule,
+  getLiveBuses
 };

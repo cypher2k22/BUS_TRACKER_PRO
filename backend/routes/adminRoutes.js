@@ -12,6 +12,7 @@ router.use(authorizeRole(["admin"]));
 
 // Routes
 router.get("/stats", adminController.getStats);
+router.post("/detect-stops", adminController.detectStops);
 router.post("/routes", adminController.createRoute);
 router.get("/routes", adminController.listRoutes);
 router.delete("/routes/:routeId", adminController.deleteRoute);

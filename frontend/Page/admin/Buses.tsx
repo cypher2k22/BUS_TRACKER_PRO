@@ -14,7 +14,7 @@ import { Dropdown } from "react-native-element-dropdown";
 import Toast from "react-native-toast-message";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://172.20.10.5:3000";
 
 export default function Buses({ navigation }: any) {
   const [buses, setBuses] = useState<any[]>([]);

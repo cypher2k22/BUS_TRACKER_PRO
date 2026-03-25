@@ -5,7 +5,7 @@ import { auth } from "../../firebaseConfig";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://172.20.10.5:3000";
 
 export default function AdminPassengers({ navigation }: any) {
     const [passengers, setPassengers] = useState<any[]>([]);

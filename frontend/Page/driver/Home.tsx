@@ -9,13 +9,13 @@ export default function Home({ navigation }: any) {
   const [tracking, setTracking] = useState(false);
   const [activeTripId, setActiveTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const locSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
-    // Cleanup interval on unmount
+    // Cleanup active GPS listener on unmount
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (locSubscriptionRef.current) {
+        locSubscriptionRef.current.remove();
       }
     };
   }, []);
@@ -65,32 +65,35 @@ export default function Home({ navigation }: any) {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // 4. Start Location Pinging
+      // 4. Start Location Pinging natively matching Google Maps
       setTracking(true);
       Alert.alert("Success", "Location tracking started");
 
-      intervalRef.current = setInterval(async () => {
-        try {
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-
-          await api.post(
-            `/api/driver/trips/${tripId}/ping-location`,
-            {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              speedKph: location.coords.speed && location.coords.speed > 0 ? location.coords.speed * 3.6 : 0,
-              headingDeg: location.coords.heading || 0,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
-          );
-        } catch (error) {
-          console.error("Location ping failed", error);
+      locSubscriptionRef.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 1000, 
+          distanceInterval: 1
+        },
+        async (location) => {
+          try {
+            await api.post(
+              `/api/driver/trips/${tripId}/ping-location`,
+              {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                speedKph: location.coords.speed && location.coords.speed > 0 ? location.coords.speed * 3.6 : 0,
+                headingDeg: location.coords.heading || 0,
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` }
+              }
+            );
+          } catch (error) {
+            console.error("Location ping failed", error);
+          }
         }
-      }, 500);
+      );
 
     } catch (error) {
       console.error("Start tracking failed", error);
@@ -109,10 +112,10 @@ export default function Home({ navigation }: any) {
 
       setLoading(true);
 
-      // 1. Stop interval
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      // 1. Stop GPS Watcher
+      if (locSubscriptionRef.current) {
+        locSubscriptionRef.current.remove();
+        locSubscriptionRef.current = null;
       }
       setTracking(false);
 

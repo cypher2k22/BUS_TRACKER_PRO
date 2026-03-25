@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, Animated, Pressable, Platform } from "react-native";
-import MapView, { Marker, Polyline, Region } from "react-native-maps";
+import MapView, { Marker, Polyline, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import app from "../../firebaseConfig";
@@ -10,14 +10,22 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 const BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : (process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000");
 
 export default function LiveMap({ route, navigation }: any) {
-  const { busId } = route.params;
+  const { busId, start, end } = route.params;
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState<Region | null>(null);
+  const [isFollowing, setIsFollowing] = useState(true);
+  
   const hasInitializedMap = useRef(false);
+  const isFollowingRef = useRef(true);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const mapRef = useRef<MapView>(null);
+
+  const setFollowMode = (follow: boolean) => {
+    isFollowingRef.current = follow;
+    setIsFollowing(follow);
+  };
 
   useEffect(() => {
     let unsubscribe = () => {};
@@ -82,6 +90,15 @@ export default function LiveMap({ route, navigation }: any) {
               longitudeDelta: 0.05,
             });
             hasInitializedMap.current = true;
+          } else {
+            if (isFollowingRef.current && mapRef.current) {
+              mapRef.current.animateToRegion({
+                latitude: newLoc.lat,
+                longitude: newLoc.lng,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }, 500); // 0.5s smooth pan exactly as ping fires
+            }
           }
         }
       } else {
@@ -105,6 +122,7 @@ export default function LiveMap({ route, navigation }: any) {
   }, [busId]);
 
   const animateToBus = () => {
+    setFollowMode(true); // Re-enable follow mode!
     if (location && mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: location.lat,
@@ -115,6 +133,22 @@ export default function LiveMap({ route, navigation }: any) {
     }
   };
 
+  const onMapReady = () => {
+    if (start && end && mapRef.current) {
+      const coords = [
+        { latitude: start.lat, longitude: start.lng },
+        { latitude: end.lat, longitude: end.lng }
+      ];
+      if (location) coords.push({ latitude: location.lat, longitude: location.lng });
+      
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(coords, {
+          edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
+          animated: true
+        });
+      }, 500);
+    }
+  };
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6A0DAD" />;
 
@@ -123,8 +157,16 @@ export default function LiveMap({ route, navigation }: any) {
       <MapView
         ref={mapRef}
         style={styles.map}
+        provider={PROVIDER_GOOGLE}
         region={region || undefined}
+        onMapReady={onMapReady}
         onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
+        onPanDrag={() => {
+          if (isFollowingRef.current) {
+            setFollowMode(false);
+            console.log("Auto-centering disabled. User is exploring the map.");
+          }
+        }}
         zoomEnabled={true}
         scrollEnabled={true}
         pitchEnabled={true}
@@ -139,19 +181,41 @@ export default function LiveMap({ route, navigation }: any) {
           />
         )}
 
-        {/* Draw Stop Markers */}
-        {stops.map((stop, index) => (
+        {/* Start Marker */}
+        {start && (
           <Marker 
-            key={index}
-            coordinate={{ latitude: stop.lat, longitude: stop.lng }}
-            title={stop.name}
-            description={index === 0 ? "Start" : index === stops.length - 1 ? "End" : `Stop ${index + 1}`}
-          >
-            <View style={styles.stopMarker}>
-              <View style={styles.stopMarkerInner} />
-            </View>
-          </Marker>
-        ))}
+            coordinate={{ latitude: start.lat, longitude: start.lng }}
+            title={`Start: ${start.name}`}
+            pinColor="green"
+          />
+        )}
+
+        {/* End Marker */}
+        {end && (
+          <Marker 
+            coordinate={{ latitude: end.lat, longitude: end.lng }}
+            title={`Destination: ${end.name}`}
+            pinColor="red"
+          />
+        )}
+
+        {/* Draw Stop Markers */}
+        {stops.map((stop, index) => {
+          if (start && stop.name === start.name) return null;
+          if (end && stop.name === end.name) return null;
+          return (
+            <Marker 
+              key={index}
+              coordinate={{ latitude: stop.lat, longitude: stop.lng }}
+              title={stop.name}
+              description={index === 0 ? "Start" : index === stops.length - 1 ? "End" : `Stop ${index + 1}`}
+            >
+              <View style={styles.stopMarker}>
+                <View style={styles.stopMarkerInner} />
+              </View>
+            </Marker>
+          );
+        })}
 
         {/* Draw Bus Live Location */}
         {location && (
@@ -163,8 +227,15 @@ export default function LiveMap({ route, navigation }: any) {
       </MapView>
 
       <View style={styles.uiOverlay}>
-        <Pressable style={styles.iconButton} onPress={animateToBus}>
-          <MaterialCommunityIcons name="crosshairs-gps" size={28} color="#6A0DAD" />
+        <Pressable 
+          style={[styles.iconButton, isFollowing ? { backgroundColor: '#6A0DAD' } : { backgroundColor: '#fff' }]} 
+          onPress={animateToBus}
+        >
+          <MaterialCommunityIcons 
+             name="crosshairs-gps" 
+             size={28} 
+             color={isFollowing ? "#fff" : "#6A0DAD"} 
+          />
         </Pressable>
 
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>

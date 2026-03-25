@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -13,7 +13,7 @@ export default function LiveTracking({ navigation }: any) {
 
   useEffect(() => {
     fetchLiveBuses();
-    const interval = setInterval(fetchLiveBuses, 5000);
+    const interval = setInterval(fetchLiveBuses, 500);
     return () => clearInterval(interval);
   }, []);
 
@@ -48,6 +48,7 @@ export default function LiveTracking({ navigation }: any) {
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
+          provider={PROVIDER_GOOGLE}
           region={{
             latitude: selectedBus ? selectedBus.lat : (liveBuses.length > 0 ? liveBuses[0].lat : 6.9271),
             longitude: selectedBus ? selectedBus.lng : (liveBuses.length > 0 ? liveBuses[0].lng : 79.8612),

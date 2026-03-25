@@ -9,7 +9,7 @@ const extraUrl =
 
 // Prefer .env at build time; fallback to app.json expo.extra.apiUrl (useful when .env is missing).
 const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || extraUrl || 'http://localhost:3000';
+  process.env.EXPO_PUBLIC_API_URL || extraUrl || 'http://172.20.10.5:3000';
 
 const api = axios.create({
   baseURL: API_URL,

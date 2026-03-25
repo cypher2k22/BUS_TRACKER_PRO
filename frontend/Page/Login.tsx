@@ -16,8 +16,8 @@ import Toast from "react-native-toast-message";
 
 import { auth } from "../firebaseConfig";
 
-// This pulls the IP from your frontend/.env file
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+// This uses your custom Wi-Fi network API directly. 
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://172.20.10.5:3000";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");

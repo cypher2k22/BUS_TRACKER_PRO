@@ -98,7 +98,7 @@ export default function Home({ navigation }: any) {
         <View style={styles.actions}>
           <ActionBtn
             text="Manage Buses"
-            icon="bus-cog"
+            icon="bus"
             onPress={() => navigation.navigate("AdminBuses")}
           />
           <ActionBtn

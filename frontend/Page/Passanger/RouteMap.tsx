@@ -8,7 +8,7 @@ import {
   Dimensions,
   FlatList
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 
@@ -82,6 +82,7 @@ export default function RouteMap({ route, navigation }: any) {
       <MapView
         ref={mapRef}
         style={styles.map}
+        provider={PROVIDER_GOOGLE}
         initialRegion={{
           latitude: routeData.startLocation.latitude,
           longitude: routeData.startLocation.longitude,

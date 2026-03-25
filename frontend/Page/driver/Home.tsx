@@ -90,7 +90,7 @@ export default function Home({ navigation }: any) {
         } catch (error) {
           console.error("Location ping failed", error);
         }
-      }, 5000);
+      }, 500);
 
     } catch (error) {
       console.error("Start tracking failed", error);

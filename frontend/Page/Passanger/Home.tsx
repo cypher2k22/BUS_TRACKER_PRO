@@ -13,7 +13,7 @@ export default function Home({ navigation }: any) {
 
   useEffect(() => {
     fetchLiveBuses();
-    const interval = setInterval(fetchLiveBuses, 10000); // Update every 10s
+    const interval = setInterval(fetchLiveBuses, 500); // Update every half second
     return () => clearInterval(interval);
   }, []);
 

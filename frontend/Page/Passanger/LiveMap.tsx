@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { View, ActivityIndicator, StyleSheet, Text, Animated, Pressable } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline, Region } from "react-native-maps";
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 import app from "../../firebaseConfig";
 import { getDatabase, ref, onValue } from "firebase/database";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -13,6 +14,8 @@ export default function LiveMap({ route, navigation }: any) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [region, setRegion] = useState<Region | null>(null);
+  const hasInitializedMap = useRef(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const mapRef = useRef<MapView>(null);
 
@@ -28,11 +31,28 @@ export default function LiveMap({ route, navigation }: any) {
         
         if (res.data.stops && res.data.stops.length > 0) {
           setStops(res.data.stops);
+          if (!hasInitializedMap.current) {
+            setRegion({
+              latitude: res.data.stops[0].lat,
+              longitude: res.data.stops[0].lng,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
+            });
+          }
         }
 
-        // Initial location
         if (res.data.latitude != null && res.data.longitude != null) {
-          setLocation({ lat: res.data.latitude, lng: res.data.longitude });
+          const loc = { lat: res.data.latitude, lng: res.data.longitude };
+          setLocation(loc);
+          if (!hasInitializedMap.current) {
+            setRegion({
+              latitude: loc.lat,
+              longitude: loc.lng,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
+            });
+            hasInitializedMap.current = true;
+          }
         }
       } catch (err) {
         console.error("Error fetching bus details", err);
@@ -51,10 +71,21 @@ export default function LiveMap({ route, navigation }: any) {
       if (snapshot.exists()) {
         const data = snapshot.val();
         if (data.latitude != null && data.longitude != null) {
-          setLocation({ lat: data.latitude, lng: data.longitude });
+          const newLoc = { lat: data.latitude, lng: data.longitude };
+          setLocation(newLoc);
+
+          if (!hasInitializedMap.current) {
+            setRegion({
+              latitude: newLoc.lat,
+              longitude: newLoc.lng,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
+            });
+            hasInitializedMap.current = true;
+          }
         }
       } else {
-        console.log("No live location data found.");
+        console.log("No live location data found for bus:", busId);
       }
     }, (error) => {
       console.error("Firebase DB error:", error);
@@ -73,12 +104,17 @@ export default function LiveMap({ route, navigation }: any) {
     };
   }, [busId]);
 
-  // Only run the region code when necessary, it behaves better with initial map rendering
-  const mapRegion = location 
-    ? { latitude: location.lat, longitude: location.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
-    : stops.length > 0 
-      ? { latitude: stops[0].lat, longitude: stops[0].lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
-      : undefined;
+  const animateToBus = () => {
+    if (location && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: location.lat,
+        longitude: location.lng,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }, 1000);
+    }
+  };
+
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6A0DAD" />;
 
@@ -87,7 +123,12 @@ export default function LiveMap({ route, navigation }: any) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        region={mapRegion}
+        region={region || undefined}
+        onRegionChangeComplete={(newRegion) => setRegion(newRegion)}
+        zoomEnabled={true}
+        scrollEnabled={true}
+        pitchEnabled={true}
+        rotateEnabled={true}
       >
         {/* Draw Route Polyline */}
         {stops.length > 0 && (
@@ -121,19 +162,54 @@ export default function LiveMap({ route, navigation }: any) {
         )}
       </MapView>
 
-      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.backButtonText}>Back</Text>
-      </Pressable>
+      <View style={styles.uiOverlay}>
+        <Pressable style={styles.iconButton} onPress={animateToBus}>
+          <MaterialCommunityIcons name="crosshairs-gps" size={28} color="#6A0DAD" />
+        </Pressable>
+
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          <Text style={styles.backText}>Back</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   map: { flex: 1 },
+  uiOverlay: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    alignItems: 'flex-end',
+  },
+  iconButton: {
+    backgroundColor: '#fff',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
   pulse: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(106, 13, 173, 0.3)' },
   markerCore: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#6A0DAD', position: 'absolute', top: 5, left: 5, borderWidth: 2, borderColor: '#fff' },
   stopMarker: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#fff', borderWidth: 2, borderColor: '#4A90E2', justifyContent: 'center', alignItems: 'center' },
   stopMarkerInner: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#4A90E2' },
-  backButton: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#6A0DAD', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 30, elevation: 5 },
-  backButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  backButton: { 
+    flexDirection: 'row',
+    backgroundColor: '#6A0DAD', 
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    borderRadius: 30, 
+    elevation: 5,
+    alignItems: 'center',
+  },
+  backText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 8 }
 });

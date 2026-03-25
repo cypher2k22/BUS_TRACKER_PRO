@@ -1,8 +1,56 @@
-import React from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, FlatList } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import axios from "axios";
+import { auth } from "../../firebaseConfig";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Home({ navigation }: any) {
+  const [liveBuses, setLiveBuses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLiveBuses();
+    const interval = setInterval(fetchLiveBuses, 10000); // Update every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchLiveBuses = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const res = await axios.get(`${BASE_URL}/api/passenger/live-buses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLiveBuses(res.data.data || []);
+    } catch (err) {
+      console.error("Error fetching live buses:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderLiveBus = ({ item }: any) => (
+    <Pressable 
+      style={styles.busCard} 
+      onPress={() => navigation.navigate("LiveMap", { busId: item.tripId })}
+    >
+      <View style={styles.busInfo}>
+        <MaterialCommunityIcons name="bus-side" size={24} color="#6A0DAD" />
+        <View style={{ marginLeft: 10 }}>
+          <Text style={styles.busNumber}>{item.busNumber}</Text>
+          <Text style={styles.routeText}>{item.routeNumber}</Text>
+        </View>
+      </View>
+      <View style={styles.trackTag}>
+        <Text style={styles.trackTagText}>LIVE</Text>
+      </View>
+    </Pressable>
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -11,44 +59,53 @@ export default function Home({ navigation }: any) {
       />
 
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Welcome to App Tracker Pro</Text>
+        <Text style={styles.header}>Welcome to Bus Tracker Pro</Text>
         <Text style={styles.subheader}>
-          Please select your route to search for your bus
+          Find and track your bus in real-time
         </Text>
 
+        <View style={styles.mainActions}>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => navigation.navigate("SearchRoute")}
+          >
+            <MaterialCommunityIcons name="magnify" size={32} color="#fff" />
+            <Text style={styles.buttonText}>Search Route</Text>
+          </Pressable>
+          
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => navigation.navigate("Schedule")}
+          >
+            <MaterialCommunityIcons name="calendar-clock" size={32} color="#fff" />
+            <Text style={styles.buttonText}>Schedule</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionTitle}>Active Now</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" />
+        ) : (
+          <View style={styles.liveListContainer}>
+            {liveBuses.length > 0 ? (
+              liveBuses.map((bus) => (
+                <View key={bus.tripId}>
+                  {renderLiveBus({ item: bus })}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noLiveText}>No buses are currently active.</Text>
+            )}
+          </View>
+        )}
+
         <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("SearchRoute")}
-        >
-          <Text style={styles.buttonText}>Search Route</Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("Schedule")}
-        >
-          <Text style={styles.buttonText}>Schedule</Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("LiveMap", { busId: "bus123" })}
-        >
-          <Text style={styles.buttonText}>Live Map</Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}
+          style={styles.feedbackButton}
           onPress={() => navigation.navigate("Feedback")}
         >
-          <Text style={styles.buttonText}>Feedback</Text>
+          <Text style={styles.feedbackText}>Give Feedback</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.button}
-          onPress={() => navigation.navigate("Home")}
-        >
-          <Text style={styles.buttonText}>Back</Text>
-        </Pressable>
-
-        
       </ScrollView>
     </View>
   );
@@ -56,17 +113,15 @@ export default function Home({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
+    paddingTop: 60,
   },
   header: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: "bold",
     color: "#65218fff",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   subheader: {
     fontSize: 16,
@@ -74,18 +129,83 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
   },
-  button: {
-    width: "80%",
-    paddingVertical: 15,
-    borderRadius: 25,
-    backgroundColor: "#4A0DAD",
+  mainActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  actionButton: {
+    width: "48%",
+    paddingVertical: 20,
+    borderRadius: 20,
+    backgroundColor: "rgba(106, 13, 173, 0.8)",
     alignItems: "center",
-    marginVertical: 10,
+    justifyContent: "center",
+    elevation: 5,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 15,
+  },
+  liveListContainer: {
+    marginBottom: 30,
+  },
+  busCard: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     elevation: 3,
+  },
+  busInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  busNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  routeText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  trackTag: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  trackTagText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  noLiveText: {
+    color: "#eee",
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: 10,
   },
   buttonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
+    marginTop: 10,
   },
+  feedbackButton: {
+    alignSelf: 'center',
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  feedbackText: {
+    color: "#fff",
+    textDecorationLine: 'underline',
+    fontSize: 16,
+  }
 });

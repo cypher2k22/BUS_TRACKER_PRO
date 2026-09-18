@@ -10,8 +10,7 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY_HERE"
-      },
-      "infoPlist": {}
+      }
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -21,10 +20,7 @@
         }
       }
     },
-    "plugins": [
-      "expo-font",
-      "expo-asset"
-    ],
+    "plugins": ["expo-font", "expo-asset"],
     "extra": {
       "apiUrl": ""
     }

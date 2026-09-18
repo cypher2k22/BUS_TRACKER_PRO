@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TodoListApp",
-    "slug": "TodoListApp",
+    "name": "BusTrack",
+    "slug": "bus-track",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -11,11 +11,7 @@
       "config": {
         "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY_HERE"
       },
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
-      }
+      "infoPlist": {}
     },
     "android": {
       "edgeToEdgeEnabled": true,

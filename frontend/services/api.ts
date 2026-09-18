@@ -1,5 +1,6 @@
 import axios from "axios";
 import Constants from "expo-constants";
+import { auth } from "../firebaseConfig";
 
 const extraRaw = Constants.expoConfig?.extra?.apiUrl;
 const extraUrl =
@@ -22,6 +23,11 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

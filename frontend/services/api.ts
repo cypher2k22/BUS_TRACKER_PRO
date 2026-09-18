@@ -1,22 +1,28 @@
-import axios from 'axios';
-import Constants from 'expo-constants';
+import axios from "axios";
+import Constants from "expo-constants";
 
 const extraRaw = Constants.expoConfig?.extra?.apiUrl;
 const extraUrl =
-  typeof extraRaw === 'string' && /^https?:\/\//.test(extraRaw.trim())
+  typeof extraRaw === "string" && /^https?:\/\//.test(extraRaw.trim())
     ? extraRaw.trim()
     : undefined;
 
-// Prefer .env at build time; fallback to app.json expo.extra.apiUrl (useful when .env is missing).
-const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || extraUrl || 'http://172.20.10.5:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || extraUrl;
+
+if (!API_URL) {
+  console.warn(
+    "BusTrack API URL is not configured. Set EXPO_PUBLIC_API_URL before starting the app."
+  );
+}
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 15000,
+  headers: { "Content-Type": "application/json" },
+});
+
+api.interceptors.request.use(async (config) => {
+  return config;
 });
 
 export default api;

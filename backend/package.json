@@ -1,10 +1,10 @@
 {
   "name": "bus-tracker-pro",
   "version": "1.0.0",
-  "main": "index.ts",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "check": "node --check index.js"
   },
   "dependencies": {
     "axios": "^1.13.4",

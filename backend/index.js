@@ -1,57 +1,64 @@
 const express = require("express");
 require("dotenv").config();
 const cors = require("cors");
-const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const passengerRoutes = require("./routes/passengerRoutes");
 const driverRoutes = require("./routes/driverRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const mapsRoutes = require("./routes/mapsRoutes");
+
 const app = express();
 
-// Enable CORS for all origins (for mobile + LAN testing)
-app.use(cors({ origin: "*" }));
+const allowedOrigins = (process.env.CORS_ORIGINS || "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-// Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: allowedOrigins.length === 1 && allowedOrigins[0] === "*" ? "*" : allowedOrigins,
+  })
+);
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// API routes
-app.use((req, res, next) => {
-  console.log(`📩 INCOMING: ${req.method} ${req.url}`);
-  next();
+if (process.env.NODE_ENV !== "test") {
+  app.use((req, res, next) => {
+    console.log(`📩 ${req.method} ${req.path}`);
+    next();
+  });
+}
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "bus-tracker-backend",
+    uptimeSec: Math.floor(process.uptime()),
+  });
 });
+
 app.use("/api/auth", authRoutes);
 app.use("/api/passenger", passengerRoutes);
 app.use("/api/driver", driverRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/maps", mapsRoutes);
 
-
-// Test endpoint to verify server connectivity
-app.get("/api/test", (req, res) => {
-  res.json({ message: "Backend is reachable!" });
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
-/** Confirms you reached this Node process (use same host:port as the app). */
-app.get("/api/health", (req, res) => {
-  res.json({
-    ok: true,
-    service: "bus-tracker-backend",
-    cwd: process.cwd(),
-    backendRoot: path.resolve(__dirname),
-    uptimeSec: Math.floor(process.uptime()),
+app.use((err, req, res, next) => {
+  console.error("UNHANDLED ERROR:", err);
+  res.status(500).json({ message: "Internal server error" });
+});
+
+const PORT = Number(process.env.PORT) || 3000;
+
+if (require.main === module) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`✅ BusTrack backend listening on port ${PORT}`);
   });
-});
-
-// Start server on LAN-accessible host
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 Test URL: http://localhost:${PORT}/api/test`);
-  console.log(`❤️ Health: http://localhost:${PORT}/api/health`);
-});
+}
 
 module.exports = app;

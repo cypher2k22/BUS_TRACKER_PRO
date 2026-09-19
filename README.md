@@ -134,7 +134,9 @@ The repository contains screens covering administration, drivers, passengers, us
 
 ## 👤 Author
 
-**Bakeerathan Karthigan**  
+**Bakeerathan Karthigan** 
+**Kushalini Satheeswaran**
+**Mohanaranjan Sulaksan**
 Computer Engineering Undergraduate  
 University of Sri Jayewardenepura
 

@@ -3,11 +3,17 @@ const path = require("path");
 
 if (!admin.apps.length) {
   try {
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-      ? path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)
-      : path.join(__dirname, "../firebase-service-account.json");
-
-    const serviceAccount = require(serviceAccountPath);
+    // Render and other hosts commonly provide secrets as environment variables
+    // rather than files. Support either a JSON env value or a local secret file.
+    let serviceAccount;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } else {
+      const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH
+        ? path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)
+        : path.join(__dirname, "../firebase-service-account.json");
+      serviceAccount = require(serviceAccountPath);
+    }
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
